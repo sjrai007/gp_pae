@@ -1,1 +1,26 @@
 (lang dune 3.0)
+(name gp_pae)
+(generate_opam_files true)
+
+(source
+ (github sjrai007/gp_pae))
+(license Apache-2.0)
+(authors "Suresh Rai")
+(maintainers "Suresh Rai")
+
+(package
+ (name gp_pae)
+ ; this package exists to declare the toolchain dependencies (for CI and for
+ ; anyone rebuilding the design); it publishes no library of its own -- the
+ ; deliverable is the generated Verilog in ../src/generated/.
+ (allow_empty)
+ (synopsis "GP_PAE: a general-purpose protocol emulator ASIC, generated in Hardcaml")
+ (description
+  "Hardcaml source of truth for GP_PAE, a reprogrammable protocol emulator chip: a tiny CPU whose instruction set reads pins, writes pins and counts cycles, replicated into independent lanes so UART, SPI and I2C run concurrently and new protocols can be loaded after fabrication. Generates the Verilog hardened by the Tiny Tapeout flow.")
+ (depends
+  (ocaml (>= 5.0))
+  dune
+  hardcaml
+  hardcaml_waveterm
+  ppx_hardcaml
+  core))
