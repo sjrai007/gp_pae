@@ -1,0 +1,23 @@
+# OCaml / dune
+_build/
+*.install
+.merlin
+
+# Python venv
+.venv/
+
+# cocotb / iverilog sim artifacts
+test/sim_build/
+test/__pycache__/
+test/*.fst
+test/*.vcd
+test/results.xml
+test/output/
+
+# scratch / downloaded reference material (not part of the submission)
+.scratch/
+.github_tt_template/
+
+# misc
+*.log
+.DS_Store

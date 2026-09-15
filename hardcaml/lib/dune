@@ -1,0 +1,5 @@
+(library
+ (name ward)
+ (preprocess
+  (pps ppx_hardcaml))
+ (libraries hardcaml))

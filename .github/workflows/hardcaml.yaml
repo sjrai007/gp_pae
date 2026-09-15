@@ -1,0 +1,31 @@
+name: hardcaml
+on: [push, workflow_dispatch]
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
+      - name: Set up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: "5.2.0"
+
+      - name: Install dependencies
+        run: opam install -y . --deps-only --with-test
+        working-directory: hardcaml
+
+      - name: Build
+        run: opam exec -- dune build
+        working-directory: hardcaml
+
+      - name: Run tests (Cyclesim + property-based protocol checks)
+        run: opam exec -- dune test
+        working-directory: hardcaml
+
+      - name: Regenerate Verilog and diff against checked-in src/generated
+        run: |
+          opam exec -- dune exec bin/generate_rtl.exe
+          git diff --exit-code -- ../src/generated
+        working-directory: hardcaml
