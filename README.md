@@ -1,5 +1,12 @@
 # GP_PAE — Reprogrammable Protocol Emulator ASIC
 
+*General Purpose Protocol ASIC Emulator*
+
+[![tests](https://github.com/sjrai007/gp_pae/actions/workflows/test.yaml/badge.svg)](https://github.com/sjrai007/gp_pae/actions/workflows/test.yaml)
+[![hardcaml](https://github.com/sjrai007/gp_pae/actions/workflows/hardcaml.yaml/badge.svg)](https://github.com/sjrai007/gp_pae/actions/workflows/hardcaml.yaml)
+[![gds](https://github.com/sjrai007/gp_pae/actions/workflows/gds.yaml/badge.svg)](https://github.com/sjrai007/gp_pae/actions/workflows/gds.yaml)
+[![docs](https://github.com/sjrai007/gp_pae/actions/workflows/docs.yaml/badge.svg)](https://github.com/sjrai007/gp_pae/actions/workflows/docs.yaml)
+
 Entry for the [Jane Street Protocol Emulator ASIC Competition](https://blog.janestreet.com/protocol-emulator-asic-competition/):
 an open-source, general-purpose protocol emulator ASIC on Tiny Tapeout /
 IHP 130nm CMOS5L, built from a **tiny CPU whose instruction set reads pins,
@@ -47,6 +54,18 @@ synthesis and place & route, and the open questions in `NOTES.md` (tile
 shape for the chipathon's 6×4 allocation, in particular — **don't submit
 without resolving that one**). See [`NOTES.md`](NOTES.md) for the live,
 detailed checklist.
+
+## Continuous integration
+
+Both halves of the verification claim run on every push, and they are
+genuinely independent of each other:
+
+| Workflow | What it proves |
+|---|---|
+| `hardcaml` | Builds the Hardcaml design and runs the full check suite — the RTL against a from-scratch software model of the same instruction set, cycle by cycle. Also regenerates the Verilog and fails if it differs from what is committed. |
+| `test` | Runs the generated Verilog through **Icarus Verilog** with cocotb — a different simulator, a different language, same design. |
+| `gds` | Tiny Tapeout's real RTL-to-GDS hardening flow, plus their submission precheck and a gate-level test. |
+| `docs` | Builds the Tiny Tapeout datasheet from `info.yaml` and `docs/info.md`. |
 
 ## Building / testing
 

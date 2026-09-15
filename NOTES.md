@@ -147,9 +147,23 @@ handoff doc for picking this project back up.
       actual FPGA board — ask the user if they have one.
 - [ ] Fill in `info.yaml` author/discord/title for real, `docs/info.md`
       datasheet content, sign up via the Google Form.
-- [ ] Push repo to GitHub as public/open-source (competition requirement),
-      wire up the real CI (currently copied but unverified against our
-      module name).
+- [x] Pushed to GitHub, public/open-source per the competition requirement:
+      **https://github.com/sjrai007/gp_pae**. Commit history was rewritten to
+      a GitHub noreply address before the first push, so the personal email
+      is not exposed on a public repo. CI is now actually verified rather
+      than just copied -- the first push failed two workflows and both were
+      real problems, not flakes:
+      (a) `docs` and `gds` both died on "Project author cannot be empty" --
+          `info.yaml` still had the author placeholder, and Tiny Tapeout's
+          action validates that file before doing anything else, so it gated
+          the entire RTL-to-GDS flow;
+      (b) `hardcaml` died on "Command not found 'dune'" -- the workflow runs
+          `opam install . --deps-only`, which needs a package definition to
+          read dependencies from, and the project had none, so the step
+          silently installed nothing. Fixed by declaring the package in
+          `dune-project` (generating `gp_pae.opam`) with the real toolchain.
+- [ ] Fill in `info.yaml` `discord` (still a TODO; optional for the docs
+      build, but the organizers use it to assign a Tapeout role).
 
 ## Findings from the protocol design pass (2026-09-15)
 
