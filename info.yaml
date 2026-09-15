@@ -1,7 +1,7 @@
 # Tiny Tapeout project information
 project:
   title:        "GP_PAE — Reprogrammable Protocol Emulator"
-  author:       ""      # TODO: fill in team name(s) before submission
+  author:       "Suresh Rai"
   discord:      ""      # TODO
   description:  "N-lane programmable pin sequencer (tiny per-lane CPU) that emulates UART, SPI and I2C, reprogrammable post-fabrication for new protocols"
   language:     "Verilog" # generated from Hardcaml (OCaml) — see hardcaml/, checked-in output in src/generated/
