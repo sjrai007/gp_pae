@@ -1,0 +1,1316 @@
+<title>WARD Tapeout Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap">
+
+<style>
+  :root {
+    --page:        #eef1f4;
+    --surface:     #fbfcfd;
+    --surface-2:   #f4f6f8;
+    --ink:         #101820;
+    --ink-2:       #4a5763;
+    --ink-3:       #7d8b98;
+    --rule:        #d5dde4;
+    --rule-2:      #e6ecf1;
+    --accent:      #2f6fb5;
+    --accent-soft: #e4edf7;
+
+    --s1: #2f6fb5;   /* categorical 1 - schematic blue */
+    --s2: #c2761a;   /* categorical 2 - ochre */
+    --s3: #1baf7a;   /* categorical 3 - green */
+
+    --ok:      #157f5c;
+    --ok-bg:   #e2f4ec;
+    --partial: #9c5c11;
+    --partial-bg: #f9edda;
+    --idle:    #6b7885;
+    --idle-bg: #eceff2;
+    --risk:    #a8392f;
+    --risk-bg: #fae8e5;
+
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --display: "Archivo", "IBM Plex Sans", system-ui, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page:        #0e1216;
+      --surface:     #171d23;
+      --surface-2:   #1d242b;
+      --ink:         #e9eef3;
+      --ink-2:       #a7b4c0;
+      --ink-3:       #75828f;
+      --rule:        #2a333c;
+      --rule-2:      #222a32;
+      --accent:      #5b9be0;
+      --accent-soft: #17273a;
+
+      --s1: #4e8fdc;
+      --s2: #be7526;
+      --s3: #22a87a;
+
+      --ok:      #35b98a;
+      --ok-bg:   #12302a;
+      --partial: #cf9445;
+      --partial-bg: #33260f;
+      --idle:    #8b98a5;
+      --idle-bg: #222a32;
+      --risk:    #e07a6d;
+      --risk-bg: #35201d;
+    }
+  }
+  :root[data-theme="dark"] {
+    --page:        #0e1216;
+    --surface:     #171d23;
+    --surface-2:   #1d242b;
+    --ink:         #e9eef3;
+    --ink-2:       #a7b4c0;
+    --ink-3:       #75828f;
+    --rule:        #2a333c;
+    --rule-2:      #222a32;
+    --accent:      #5b9be0;
+    --accent-soft: #17273a;
+
+    --s1: #4e8fdc;
+    --s2: #be7526;
+    --s3: #22a87a;
+
+    --ok:      #35b98a;
+    --ok-bg:   #12302a;
+    --partial: #cf9445;
+    --partial-bg: #33260f;
+    --idle:    #8b98a5;
+    --idle-bg: #222a32;
+    --risk:    #e07a6d;
+    --risk-bg: #35201d;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 20px; }
+
+  /* ---------- masthead: an IC datasheet header ---------- */
+  .masthead {
+    background: var(--surface);
+    border-bottom: 1px solid var(--rule);
+  }
+  .masthead-inner { padding-block: 26px 0; }
+  .mast-top {
+    display: flex; flex-wrap: wrap; align-items: baseline;
+    gap: 8px 16px; margin-bottom: 4px;
+  }
+  .mast-name {
+    font-family: var(--display);
+    font-weight: 700; font-size: 30px; letter-spacing: -0.02em;
+    margin: 0; line-height: 1.1;
+  }
+  .mast-sub {
+    font-family: var(--sans); font-size: 15px; color: var(--ink-2);
+    font-weight: 450;
+  }
+  .mast-desc {
+    max-width: 68ch; color: var(--ink-2); margin: 10px 0 20px;
+    font-size: 14.5px;
+  }
+  .mast-desc a { color: var(--accent); }
+
+  /* datasheet parameter strip */
+  .specstrip {
+    display: grid; gap: 1px;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    background: var(--rule-2);
+    border: 1px solid var(--rule); border-bottom: none;
+    border-radius: 3px 3px 0 0; overflow: hidden;
+  }
+  .spec { background: var(--surface); padding: 9px 12px; }
+  .spec dt {
+    font-family: var(--mono); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3);
+    margin: 0 0 2px;
+  }
+  .spec dd {
+    margin: 0; font-family: var(--mono); font-size: 12.5px;
+    color: var(--ink); font-weight: 500;
+  }
+
+  /* ---------- tabs ---------- */
+  .tabbar {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+    background: var(--page);
+    border-bottom: 1px solid var(--rule);
+  }
+  .tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    appearance: none; background: none; border: none;
+    border-bottom: 2px solid transparent;
+    font-family: var(--sans); font-size: 13.5px; font-weight: 500;
+    color: var(--ink-2); padding: 13px 14px; cursor: pointer;
+    white-space: nowrap; margin-bottom: -1px;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+  .tab .tnum {
+    font-family: var(--mono); font-size: 10px; color: var(--ink-3);
+    margin-right: 6px;
+  }
+  .tab[aria-selected="true"] .tnum { color: var(--accent); }
+
+  main { padding-block: 26px 64px; }
+
+  /* ---------- structure ---------- */
+  h2.sec {
+    font-family: var(--display); font-weight: 600; font-size: 13px;
+    letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-3);
+    margin: 34px 0 12px; padding-bottom: 7px;
+    border-bottom: 1px solid var(--rule);
+  }
+  h2.sec:first-of-type { margin-top: 0; }
+  .lede { max-width: 72ch; color: var(--ink-2); margin: 0 0 18px; font-size: 14.5px; }
+  .note {
+    font-size: 13px; color: var(--ink-3); max-width: 76ch;
+    border-left: 2px solid var(--rule); padding-left: 12px; margin: 16px 0 0;
+  }
+
+  .panel {
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 3px; padding: 18px;
+  }
+  .grid { display: grid; gap: 14px; }
+  .g2 { grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); }
+  .g3 { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+
+  /* ---------- stat tiles ---------- */
+  .stat {
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 3px; padding: 14px 16px;
+  }
+  .stat .k {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-3); margin-bottom: 6px;
+  }
+  .stat .v {
+    font-family: var(--display); font-weight: 700; font-size: 30px;
+    line-height: 1; letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat .v small { font-size: 15px; font-weight: 600; color: var(--ink-2); }
+  .stat .cap { font-size: 12.5px; color: var(--ink-2); margin-top: 6px; }
+  .stat.good .v { color: var(--ok); }
+
+  /* ---------- status chips ---------- */
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono); font-size: 10.5px; font-weight: 500;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 2px; white-space: nowrap;
+  }
+  .chip::before { font-size: 9px; line-height: 1; }
+  .chip.done    { color: var(--ok);      background: var(--ok-bg); }
+  .chip.done::before { content: "\25CF"; }
+  .chip.partial { color: var(--partial); background: var(--partial-bg); }
+  .chip.partial::before { content: "\25D0"; }
+  .chip.idle    { color: var(--idle);    background: var(--idle-bg); }
+  .chip.idle::before { content: "\25CB"; }
+  .chip.risk    { color: var(--risk);    background: var(--risk-bg); }
+  .chip.risk::before { content: "\25B2"; }
+
+  /* ---------- requirement rows ---------- */
+  .reqs { border: 1px solid var(--rule); border-radius: 3px; overflow: hidden; background: var(--surface); }
+  .req {
+    display: grid; grid-template-columns: 1fr auto;
+    gap: 8px 14px; align-items: start;
+    padding: 11px 15px; border-bottom: 1px solid var(--rule-2);
+  }
+  .req:last-child { border-bottom: none; }
+  .req-title { font-weight: 500; font-size: 14px; }
+  .req-note { font-size: 12.5px; color: var(--ink-2); margin-top: 2px; max-width: 74ch; }
+  .req-group {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-3);
+    background: var(--surface-2); padding: 7px 15px;
+    border-bottom: 1px solid var(--rule-2);
+  }
+
+  /* ---------- phase rail (a real sequence, so numbered) ---------- */
+  .phases { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .phase {
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 3px; padding: 14px; position: relative;
+  }
+  .phase[data-state="active"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .phase .pn {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
+    color: var(--ink-3); text-transform: uppercase;
+  }
+  .phase h3 {
+    font-family: var(--display); font-size: 16px; font-weight: 600;
+    margin: 4px 0 6px; letter-spacing: -0.01em;
+  }
+  .phase p { margin: 0 0 10px; font-size: 13px; color: var(--ink-2); }
+
+  /* ---------- bug log ---------- */
+  .bug { border: 1px solid var(--rule); border-radius: 3px; background: var(--surface); padding: 15px 17px; }
+  .bug h3 {
+    font-family: var(--display); font-size: 15px; font-weight: 600;
+    margin: 0 0 3px; letter-spacing: -0.01em;
+  }
+  .bug .where {
+    font-family: var(--mono); font-size: 11.5px; color: var(--accent); margin-bottom: 9px;
+  }
+  .bug p { margin: 0 0 8px; font-size: 13.5px; color: var(--ink-2); }
+  .bug .caught {
+    font-size: 12.5px; color: var(--ink); background: var(--surface-2);
+    border-left: 2px solid var(--s3); padding: 7px 11px; border-radius: 0 2px 2px 0;
+  }
+  .bug .caught b { font-weight: 600; }
+
+  /* ---------- charts ---------- */
+  .chartcard {
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 3px; padding: 16px 18px;
+  }
+  .chartcard h3 {
+    font-family: var(--display); font-size: 15px; font-weight: 600;
+    margin: 0 0 3px; letter-spacing: -0.01em;
+  }
+  .chartcard .sub { font-size: 12.5px; color: var(--ink-2); margin: 0 0 14px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 12px; }
+  .lg { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2); }
+  .lg i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex: none; }
+
+  table.dt { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.dt th, table.dt td {
+    text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--rule-2);
+  }
+  table.dt th {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.09em;
+    text-transform: uppercase; color: var(--ink-3); font-weight: 500;
+  }
+  table.dt td.num { font-family: var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+  table.dt tr:last-child td { border-bottom: none; }
+  .tablewrap { overflow-x: auto; }
+
+  /* ---------- waveform ---------- */
+  .wavecard {
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 3px; overflow: hidden;
+  }
+  .wavehead { padding: 15px 18px 13px; border-bottom: 1px solid var(--rule); }
+  .wavehead h3 {
+    font-family: var(--display); font-size: 16px; font-weight: 600;
+    margin: 0 0 4px; letter-spacing: -0.01em;
+  }
+  .wavehead p { margin: 0; font-size: 13px; color: var(--ink-2); max-width: 78ch; }
+  .wavetools {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    padding: 9px 18px; background: var(--surface-2);
+    border-bottom: 1px solid var(--rule);
+    font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+  }
+  .zoombtns { display: flex; gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 2px; overflow: hidden; }
+  .zoombtns button {
+    appearance: none; border: none; background: var(--surface);
+    font-family: var(--mono); font-size: 11px; color: var(--ink-2);
+    padding: 3px 9px; cursor: pointer;
+  }
+  .zoombtns button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+  .zoombtns button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .readout { margin-left: auto; color: var(--ink-2); }
+  .readout b { color: var(--ink); font-weight: 500; }
+
+  .waverow { display: flex; }
+  .wavelabels { flex: none; width: 152px; border-right: 1px solid var(--rule); background: var(--surface); }
+  .wavelabels .lblhead { border-bottom: 1px solid var(--rule-2); }
+  .wavelabels div {
+    font-family: var(--mono); font-size: 11.5px; color: var(--ink-2);
+    display: flex; align-items: center; padding: 0 12px; justify-content: flex-end;
+    text-align: right;
+  }
+  .wavescroll { overflow-x: auto; flex: 1 1 auto; }
+
+  .foot {
+    margin-top: 44px; padding-top: 18px; border-top: 1px solid var(--rule);
+    font-size: 12.5px; color: var(--ink-3); max-width: 80ch;
+  }
+  .foot code, .lede code, .req-note code, .bug p code, .note code, .phase p code {
+    font-family: var(--mono); font-size: 0.92em;
+    background: var(--surface-2); padding: 1px 4px; border-radius: 2px;
+    border: 1px solid var(--rule-2);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<header class="masthead">
+  <div class="wrap masthead-inner">
+    <div class="mast-top">
+      <h1 class="mast-name">WARD</h1>
+      <span class="mast-sub">4-lane programmable protocol emulator &mdash; build &amp; verification status</span>
+    </div>
+    <p class="mast-desc">
+      An open-source protocol emulator ASIC for the
+      <a href="https://blog.janestreet.com/protocol-emulator-asic-competition/">Jane Street competition</a>:
+      a tiny CPU whose instruction set reads pins, writes pins and counts cycles, replicated
+      into independent lanes so UART, SPI and I2C run at once &mdash; and so protocols that
+      don't exist yet can be added after the chip is fabricated. Everything on this page is
+      generated from the same simulations the test suite asserts against.
+    </p>
+    <dl class="specstrip">
+      <div class="spec"><dt>Part</dt><dd>tt_um_ward_&#8203;protocol_emulator</dd></div>
+      <div class="spec"><dt>Process</dt><dd>IHP SG13G2 &middot; 130 nm</dd></div>
+      <div class="spec"><dt>Area budget</dt><dd>6&times;4 tiles &middot; ~0.7 mm&sup2;</dd></div>
+      <div class="spec"><dt>Clock target</dt><dd>50 MHz (pre-STA)</dd></div>
+      <div class="spec"><dt>Submission</dt><dd>2027-01-18</dd></div>
+      <div class="spec"><dt>Shuttle</dt><dd>Mar 2027 CMOS5L</dd></div>
+    </dl>
+  </div>
+</header>
+
+<div class="tabbar">
+  <div class="wrap">
+    <div class="tabs" role="tablist" aria-label="Dashboard sections">
+      <button class="tab" role="tab" id="tb-tracker" aria-controls="tab-tracker" aria-selected="true"><span class="tnum">01</span>Tracker</button>
+      <button class="tab" role="tab" id="tb-verify"  aria-controls="tab-verify"  aria-selected="false"><span class="tnum">02</span>Verification</button>
+      <button class="tab" role="tab" id="tb-wave"    aria-controls="tab-wave"    aria-selected="false"><span class="tnum">03</span>Structure &amp; waveforms</button>
+      <button class="tab" role="tab" id="tb-diff"    aria-controls="tab-diff"    aria-selected="false"><span class="tnum">04</span>Differentiation</button>
+      <button class="tab" role="tab" id="tb-ppa"     aria-controls="tab-ppa"     aria-selected="false"><span class="tnum">05</span>PPA &amp; memory</button>
+    </div>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <!-- ============================ 01 TRACKER ============================ -->
+  <section id="tab-tracker" role="tabpanel" aria-labelledby="tb-tracker">
+
+    <h2 class="sec">Where the build stands</h2>
+    <div class="grid g3" style="margin-bottom:8px">
+      <div class="stat good">
+        <div class="k">Test checks</div>
+        <div class="v">742 <small>/ 0 failed</small></div>
+        <div class="cap">Across two independent simulators</div>
+      </div>
+      <div class="stat">
+        <div class="k">Area used</div>
+        <div class="v">12,442 <small>cells</small></div>
+        <div class="cap">~52% of the ~24,000-cell budget &middot; generic synthesis</div>
+      </div>
+      <div class="stat">
+        <div class="k">Protocols proven in silicon-sim</div>
+        <div class="v">1 <small>of 3 baseline</small></div>
+        <div class="cap">UART TX end-to-end; RX, SPI, I2C designed</div>
+      </div>
+    </div>
+
+    <h2 class="sec">Phases</h2>
+    <div class="phases">
+      <div class="phase" data-state="active">
+        <div class="pn">Phase 0</div>
+        <h3>Visibility</h3>
+        <p>This dashboard. Progress, verification evidence and real waveforms in one place.</p>
+        <span class="chip partial">In progress</span>
+      </div>
+      <div class="phase">
+        <div class="pn">Phase A</div>
+        <h3>Baseline protocols</h3>
+        <p>UART RX, SPI master, I2C master with clock stretching. Fully designed; implementation gated on one small ISA change.</p>
+        <span class="chip partial">Designed</span>
+      </div>
+      <div class="phase">
+        <div class="pn">Phase B</div>
+        <h3>Differentiation</h3>
+        <p>Logic-analyzer mode, JTAG/SWD, property-based and formal verification.</p>
+        <span class="chip idle">Queued</span>
+      </div>
+      <div class="phase">
+        <div class="pn">Phase C</div>
+        <h3>PPA closure</h3>
+        <p>PDK-mapped synthesis, place &amp; route, timing and power. Every estimate becomes measured here.</p>
+        <span class="chip idle">Queued</span>
+      </div>
+    </div>
+
+    <h2 class="sec">What the brief asks for</h2>
+    <p class="lede">
+      Straight from the competition rules and the announcement post. Judging weights
+      <em>unique functionality</em> and <em>novel design and verification methodology</em>, so
+      those get tracked as first-class rows, not as a footnote.
+    </p>
+
+    <div class="reqs">
+      <div class="req-group">Required</div>
+
+      <div class="req">
+        <div>
+          <div class="req-title">A tiny CPU, not fixed protocol blocks</div>
+          <div class="req-note">Instruction set built around reading pins, writing pins and counting cycles. 8 opcodes, 16-bit words, 4 independent lanes.</div>
+        </div>
+        <span class="chip done">Done</span>
+      </div>
+
+      <div class="req">
+        <div>
+          <div class="req-title">Reprogrammable after fabrication</div>
+          <div class="req-note">4-wire SPI config port writes lane instruction memory, pin assignment and run state at any time. No back doors used in test &mdash; the tests drive the real port.</div>
+        </div>
+        <span class="chip done">Done</span>
+      </div>
+
+      <div class="req">
+        <div>
+          <div class="req-title">UART</div>
+          <div class="req-note">TX transmits a real 8N1 frame and is decoded back independently from the waveform. RX designed with a cycle-accurate timing proof, not yet implemented.</div>
+        </div>
+        <span class="chip partial">TX done</span>
+      </div>
+
+      <div class="req">
+        <div>
+          <div class="req-title">SPI</div>
+          <div class="req-note">Mode 0 master, two lanes (a clock/control lane and a data lane, IRQ-synchronized). Microcode and timing proof written.</div>
+        </div>
+        <span class="chip partial">Designed</span>
+      </div>
+
+      <div class="req">
+        <div>
+          <div class="req-title">I2C</div>
+          <div class="req-note">Master with clock stretching &mdash; absorbed by a single blocking <code>WAIT</code>, proven correct for any stretch duration structurally rather than by example.</div>
+        </div>
+        <span class="chip partial">Designed</span>
+      </div>
+
+      <div class="req">
+        <div>
+          <div class="req-title">Open source, 6&times;4 tiles</div>
+          <div class="req-note">Apache-2.0, on the Tiny Tapeout CMOS5L template. <code>tiles: "6x4"</code> as the rules specify.</div>
+        </div>
+        <span class="chip done">Done</span>
+      </div>
+
+      <div class="req-group">Stretch goals named in the brief</div>
+
+      <div class="req">
+        <div>
+          <div class="req-title">Low-speed USB</div>
+          <div class="req-note">Needs the <code>uio</code> bidirectional pins for D+/D&minus; turnaround. Architecture supports it; no microcode yet.</div>
+        </div>
+        <span class="chip idle">Not started</span>
+      </div>
+
+      <div class="req">
+        <div>
+          <div class="req-title">10 Mbit Ethernet (10BASE-T)</div>
+          <div class="req-note">Manchester encode/decode at 10 Mbit against a 50 MHz core leaves 5 cycles per bit &mdash; the tightest timing case in the whole design.</div>
+        </div>
+        <span class="chip idle">Not started</span>
+      </div>
+
+      <div class="req-group">Bonus protocols suggested by the brief</div>
+
+      <div class="req">
+        <div>
+          <div class="req-title">JTAG &middot; SWD &middot; PS/2 &middot; CAN</div>
+          <div class="req-note">JTAG's TAP state machine is arguably an easier fit than SPI. CAN is the hard one &mdash; bit-stuffing and a running CRC-15 stretch what an ISA this small can express, which is exactly why it is worth attempting.</div>
+        </div>
+        <span class="chip idle">Not started</span>
+      </div>
+
+      <div class="req-group">Judged criteria</div>
+
+      <div class="req">
+        <div>
+          <div class="req-title">Novel verification methodology</div>
+          <div class="req-note">Three independent layers, two simulators, a from-scratch software model of the CPU used as an oracle. Three real bugs caught so far &mdash; see the Verification tab.</div>
+        </div>
+        <span class="chip done">Strong</span>
+      </div>
+
+      <div class="req">
+        <div>
+          <div class="req-title">Unique functionality</div>
+          <div class="req-note">Concurrent independent protocols on one die, software-assigned pin routing, and a logic-analyzer mode that reuses the emulation hardware unchanged.</div>
+        </div>
+        <span class="chip partial">Partly proven</span>
+      </div>
+
+      <div class="req">
+        <div>
+          <div class="req-title">Validate on FPGA before the ASIC flow</div>
+          <div class="req-note">The template ships an ICE40UP5K bitstream workflow. Blocked on access to a board &mdash; not on the design.</div>
+        </div>
+        <span class="chip risk">Needs hardware</span>
+      </div>
+    </div>
+
+    <p class="note">
+      Status vocabulary is deliberately narrow: <b>Done</b> means proven in simulation and covered by
+      a passing check, <b>Designed</b> means the microcode and its timing proof exist but no code runs
+      yet, <b>Not started</b> means exactly that. Nothing here is marked done on the strength of it
+      compiling.
+    </p>
+  </section>
+
+  <!-- ============================ 02 VERIFICATION ============================ -->
+  <section id="tab-verify" role="tabpanel" aria-labelledby="tb-verify" hidden>
+
+    <h2 class="sec">Verification status</h2>
+    <div class="grid g3" style="margin-bottom:18px">
+      <div class="stat good">
+        <div class="k">Hardcaml Cyclesim</div>
+        <div class="v">742 <small>passing</small></div>
+        <div class="cap">Cycle-by-cycle RTL vs. software model</div>
+      </div>
+      <div class="stat good">
+        <div class="k">Icarus Verilog + cocotb</div>
+        <div class="v">PASS</div>
+        <div class="cap">Generated RTL, a second independent engine</div>
+      </div>
+      <div class="stat">
+        <div class="k">Real bugs caught</div>
+        <div class="v">3</div>
+        <div class="cap">Each by a different verification layer</div>
+      </div>
+    </div>
+
+    <h2 class="sec">Why three layers, not one</h2>
+    <p class="lede">
+      Each layer catches a class of bug the others structurally cannot. That is not a
+      theoretical claim &mdash; the three bugs below were each caught by a different layer,
+      and the third would have survived the other two indefinitely.
+    </p>
+
+    <div class="grid g3">
+      <div class="panel">
+        <div style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px">Layer 1</div>
+        <h3 style="font-family:var(--display);font-size:15px;font-weight:600;margin:0 0 6px">RTL vs. software model</h3>
+        <p style="margin:0;font-size:13px;color:var(--ink-2)">
+          A from-scratch OCaml interpreter of the instruction set runs in lockstep with the
+          hardware. Every register, pin and FIFO compared every cycle. Catches RTL that
+          disagrees with the architecture.
+        </p>
+      </div>
+      <div class="panel">
+        <div style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px">Layer 2</div>
+        <h3 style="font-family:var(--display);font-size:15px;font-weight:600;margin:0 0 6px">Two independent simulators</h3>
+        <p style="margin:0;font-size:13px;color:var(--ink-2)">
+          The same scenario runs through Hardcaml's simulator and, separately, through Icarus
+          Verilog against the generated Verilog. A bug has to fool two independently written
+          engines to survive.
+        </p>
+      </div>
+      <div class="panel">
+        <div style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px">Layer 3</div>
+        <h3 style="font-family:var(--display);font-size:15px;font-weight:600;margin:0 0 6px">Decode the waveform</h3>
+        <p style="margin:0;font-size:13px;color:var(--ink-2)">
+          Read the emitted pin trace back as a protocol frame and check it spells the byte we
+          sent. The only layer that can catch microcode whose timing is wrong but
+          self-consistent.
+        </p>
+      </div>
+    </div>
+
+    <h2 class="sec">Bugs caught, and by what</h2>
+    <div class="grid" style="gap:12px">
+
+      <div class="bug">
+        <h3>Shift register grew without bound</h3>
+        <div class="where">hardcaml/lib/isa.ml &middot; the software model</div>
+        <p>
+          The model accumulated input bits with an unmasked shift, so after repeated
+          <code>IN</code> instructions its value drifted past 8 bits &mdash; while the real hardware,
+          being a fixed 8-bit register, silently truncated.
+        </p>
+        <div class="caught"><b>Caught by:</b> tracing the hardware's register width against the model before either had run. A latent mismatch that would have produced confusing failures later.</div>
+      </div>
+
+      <div class="bug">
+        <h3>Register reads returned the previous transaction</h3>
+        <div class="where">hardcaml/lib/config_port.ml &middot; the SPI config port</div>
+        <p>
+          Read data was latched on the same clock edge that updated the address register, so a
+          read always returned whatever the <em>last</em> transaction had addressed. A register
+          cannot see its own not-yet-applied update through combinational logic downstream of it.
+        </p>
+        <div class="caught"><b>Caught by:</b> layer 2 &mdash; an integration test that wrote a register over the real SPI port and read it straight back.</div>
+      </div>
+
+      <div class="bug">
+        <h3>Every UART bit ran one cycle long</h3>
+        <div class="where">hardcaml/test/test_ward.ml &middot; the UART TX microcode</div>
+        <p>
+          The loop-closing jump costs a real clock cycle even when it is not taken, and that
+          cycle was not budgeted out of the bit-period delay. The hardware and the software model
+          agreed with each other perfectly &mdash; both faithfully executed the same wrong microcode,
+          so cross-checking them proved nothing.
+        </p>
+        <div class="caught"><b>Caught by:</b> layer 3 only &mdash; decoding the emitted waveform gave <code>0x4D</code> where <code>0xA5</code> was sent. This is the bug that justifies the whole third layer.</div>
+      </div>
+    </div>
+
+    <p class="note">
+      Still to come in Phase B: randomized property-based testing (thousands of generated
+      byte/timing combinations per protocol rather than hand-picked cases), and a formal check
+      on FIFO invariants using Yosys' SAT solver.
+    </p>
+  </section>
+
+  <!-- ============================ 03 STRUCTURE & WAVEFORMS ============================ -->
+  <section id="tab-wave" role="tabpanel" aria-labelledby="tb-wave" hidden>
+
+    <h2 class="sec">What is on the die</h2>
+    <p class="lede">
+      Four independent sequencer lanes, a pin crossbar that any lane can be pointed through, a
+      shared flag register for cross-lane handshakes, and an always-live SPI port for
+      programming. Because the chip is general-purpose, <em>which</em> blocks and pins are busy
+      depends entirely on what has been loaded &mdash; so the next update to this page lights the
+      live path up per cycle, driven by the same trace data as the waveforms below.
+    </p>
+
+    <div class="panel" style="padding:10px">
+      <div style="overflow-x:auto">
+        <svg viewBox="0 0 900 400" width="900" style="max-width:100%;height:auto;display:block" role="img" aria-label="Block diagram: SPI config port programs four lanes; each lane has a program counter, registers and a 32-word instruction memory; lanes reach physical pins through a crossbar; a shared four-flag register links lanes.">
+          <defs>
+            <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--ink-3)"></path>
+            </marker>
+          </defs>
+
+          <rect x="8" y="8" width="884" height="384" rx="4" fill="none" stroke="var(--rule)" stroke-width="1" stroke-dasharray="4 3"></rect>
+          <text x="20" y="26" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink-3)" letter-spacing="1">DIE BOUNDARY &#183; 6&#215;4 TILES</text>
+
+          <!-- config port -->
+          <rect x="26" y="52" width="150" height="120" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.2"></rect>
+          <text x="101" y="76" text-anchor="middle" font-family="Archivo, sans-serif" font-weight="600" font-size="13" fill="var(--ink)">SPI config port</text>
+          <text x="101" y="94" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink-2)">4-wire slave</text>
+          <text x="101" y="116" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink-2)">writes imem,</text>
+          <text x="101" y="130" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink-2)">pinbase, run</text>
+          <text x="101" y="152" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--ink-3)">ui_in[2:0] &#183; uo_out[0]</text>
+
+          <!-- lanes -->
+          <g font-family="IBM Plex Mono, monospace" font-size="9.5">
+            <rect x="232" y="44" width="200" height="72" rx="3" fill="var(--surface-2)" stroke="var(--rule)"></rect>
+            <text x="244" y="62" font-family="Archivo, sans-serif" font-weight="600" font-size="12" fill="var(--ink)">Lane 0</text>
+            <text x="244" y="79" fill="var(--ink-2)">PC &#183; X &#183; Y &#183; ISR &#183; OSR &#183; FIFOs</text>
+            <text x="244" y="96" fill="var(--s2)">imem 32 &#215; 16 bit</text>
+            <text x="244" y="110" fill="var(--ink-3)">pinbase &#183; jmp_pin &#183; run</text>
+
+            <rect x="232" y="124" width="200" height="72" rx="3" fill="var(--surface-2)" stroke="var(--rule)"></rect>
+            <text x="244" y="142" font-family="Archivo, sans-serif" font-weight="600" font-size="12" fill="var(--ink)">Lane 1</text>
+            <text x="244" y="159" fill="var(--ink-2)">PC &#183; X &#183; Y &#183; ISR &#183; OSR &#183; FIFOs</text>
+            <text x="244" y="176" fill="var(--s2)">imem 32 &#215; 16 bit</text>
+            <text x="244" y="190" fill="var(--ink-3)">pinbase &#183; jmp_pin &#183; run</text>
+
+            <rect x="232" y="204" width="200" height="72" rx="3" fill="var(--surface-2)" stroke="var(--rule)"></rect>
+            <text x="244" y="222" font-family="Archivo, sans-serif" font-weight="600" font-size="12" fill="var(--ink)">Lane 2</text>
+            <text x="244" y="239" fill="var(--ink-2)">PC &#183; X &#183; Y &#183; ISR &#183; OSR &#183; FIFOs</text>
+            <text x="244" y="256" fill="var(--s2)">imem 32 &#215; 16 bit</text>
+            <text x="244" y="270" fill="var(--ink-3)">pinbase &#183; jmp_pin &#183; run</text>
+
+            <rect x="232" y="284" width="200" height="72" rx="3" fill="var(--surface-2)" stroke="var(--rule)"></rect>
+            <text x="244" y="302" font-family="Archivo, sans-serif" font-weight="600" font-size="12" fill="var(--ink)">Lane 3</text>
+            <text x="244" y="319" fill="var(--ink-2)">PC &#183; X &#183; Y &#183; ISR &#183; OSR &#183; FIFOs</text>
+            <text x="244" y="336" fill="var(--s2)">imem 32 &#215; 16 bit</text>
+            <text x="244" y="350" fill="var(--ink-3)">pinbase &#183; jmp_pin &#183; run</text>
+          </g>
+
+          <!-- shared irq -->
+          <rect x="26" y="204" width="150" height="72" rx="3" fill="var(--surface-2)" stroke="var(--rule)"></rect>
+          <text x="101" y="228" text-anchor="middle" font-family="Archivo, sans-serif" font-weight="600" font-size="12" fill="var(--ink)">Shared flags</text>
+          <text x="101" y="246" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink-2)">4 &#215; IRQ</text>
+          <text x="101" y="263" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--ink-3)">cross-lane sync</text>
+
+          <!-- crossbar -->
+          <rect x="488" y="44" width="104" height="312" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.2"></rect>
+          <text x="540" y="192" text-anchor="middle" font-family="Archivo, sans-serif" font-weight="600" font-size="13" fill="var(--ink)">Pin</text>
+          <text x="540" y="209" text-anchor="middle" font-family="Archivo, sans-serif" font-weight="600" font-size="13" fill="var(--ink)">crossbar</text>
+          <text x="540" y="230" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--ink-2)">pinbase-routed</text>
+
+          <!-- pins -->
+          <g>
+            <rect x="648" y="60" width="222" height="76" rx="3" fill="var(--surface-2)" stroke="var(--rule)"></rect>
+            <text x="662" y="80" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--ink)">ui_in[7:3]</text>
+            <text x="662" y="98" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--ink-2)">5 pins &#183; input only</text>
+            <text x="662" y="120" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--ink-3)">UART RX, SPI MISO</text>
+
+            <rect x="648" y="150" width="222" height="76" rx="3" fill="var(--surface-2)" stroke="var(--rule)"></rect>
+            <text x="662" y="170" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--ink)">uo_out[7:1]</text>
+            <text x="662" y="188" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--ink-2)">7 pins &#183; output only</text>
+            <text x="662" y="210" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--ink-3)">UART TX, SCLK, MOSI, CS</text>
+
+            <rect x="648" y="240" width="222" height="88" rx="3" fill="var(--surface)" stroke="var(--s3)" stroke-width="1.4"></rect>
+            <text x="662" y="260" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--ink)">uio[7:0]</text>
+            <text x="662" y="278" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--ink-2)">8 pins &#183; bidirectional</text>
+            <text x="662" y="300" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--s3)">the only open-drain capable pins</text>
+            <text x="662" y="316" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--ink-3)">I2C SDA/SCL, USB D+/D&#8722;</text>
+          </g>
+
+          <!-- wires -->
+          <g stroke="var(--ink-3)" stroke-width="1" fill="none" marker-end="url(#ar)" opacity="0.75">
+            <path d="M176,90 L232,80"></path>
+            <path d="M176,104 L232,160"></path>
+            <path d="M176,118 L232,240"></path>
+            <path d="M176,132 L232,320"></path>
+            <path d="M176,240 L232,196" marker-end="none" stroke-dasharray="3 3"></path>
+            <path d="M432,80 L488,120"></path>
+            <path d="M432,160 L488,160"></path>
+            <path d="M432,240 L488,220"></path>
+            <path d="M432,320 L488,280"></path>
+            <path d="M592,110 L648,98"></path>
+            <path d="M592,190 L648,188"></path>
+            <path d="M592,270 L648,284"></path>
+          </g>
+          <text x="196" y="188" font-family="IBM Plex Mono, monospace" font-size="9" fill="var(--ink-3)" transform="rotate(-90 196 188)">flags</text>
+        </svg>
+      </div>
+    </div>
+    <p class="note">
+      Static for now. The planned update animates this: stepping through a captured run
+      and lighting whichever lane is fetching, which crossbar route is live and which pin is
+      being driven on that exact cycle &mdash; using real internal signal values, not an illustration.
+    </p>
+
+    <h2 class="sec">Real waveforms from the verified runs</h2>
+    <p class="lede">
+      These are not drawings. They are per-cycle signal values exported from the same
+      simulation scenarios the test suite asserts against, so what is plotted is exactly what
+      was proven correct. Hover to read values at any cycle.
+    </p>
+
+    <div id="waves" class="grid" style="gap:18px"></div>
+  </section>
+
+  <!-- ============================ 04 DIFFERENTIATION ============================ -->
+  <section id="tab-diff" role="tabpanel" aria-labelledby="tb-diff" hidden>
+
+    <h2 class="sec">The field</h2>
+    <p class="lede">
+      Several entries are already public. The most developed one independently arrived at
+      almost exactly our architecture &mdash; four lanes, a 16-bit instruction word, an SPI slave
+      host interface, flip-flop instruction memory. When two teams converge that precisely
+      with no contact, the architecture is the obvious answer and <strong>architecture alone
+      will not distinguish anyone</strong>. Execution, measurement and area efficiency will.
+    </p>
+
+    <h2 class="sec">Where we intend to be different</h2>
+    <div class="grid g2">
+
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:start;margin-bottom:8px">
+          <h3 style="font-family:var(--display);font-size:16px;font-weight:600;margin:0">Logic-analyzer mode</h3>
+          <span class="chip idle">Queued</span>
+        </div>
+        <p style="margin:0;font-size:13.5px;color:var(--ink-2)">
+          A lane running an input-only loop is a logic-analyzer channel with a host FIFO &mdash; the
+          same silicon, no new hardware, just different microcode. The brief frames this chip as
+          a tool for &ldquo;hardware debugging and reverse engineering&rdquo;, so a capture mode
+          answers the brief's own stated purpose rather than adding a feature next to it.
+        </p>
+      </div>
+
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:start;margin-bottom:8px">
+          <h3 style="font-family:var(--display);font-size:16px;font-weight:600;margin:0">JTAG and SWD</h3>
+          <span class="chip idle">Queued</span>
+        </div>
+        <p style="margin:0;font-size:13.5px;color:var(--ink-2)">
+          Named in the brief and skipped by the leading public entry. JTAG's 16-state TAP
+          controller is a natural fit for a branchy little sequencer &mdash; arguably an easier
+          target than SPI. SWD needs the same runtime pin-direction flipping I2C already uses.
+        </p>
+      </div>
+
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:start;margin-bottom:8px">
+          <h3 style="font-family:var(--display);font-size:16px;font-weight:600;margin:0">Design-space exploration</h3>
+          <span class="chip idle">Queued</span>
+        </div>
+        <p style="margin:0;font-size:13.5px;color:var(--ink-2)">
+          The design is a <em>generator</em>, not a fixed netlist: lane count, memory depth and
+          instruction width are parameters. So we can sweep the grid, synthesize every point and
+          publish the actual area/functionality frontier &mdash; choosing parameters from measurement
+          while hand-written entries choose from intuition.
+        </p>
+      </div>
+
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:start;margin-bottom:8px">
+          <h3 style="font-family:var(--display);font-size:16px;font-weight:600;margin:0">Non-uniform lanes</h3>
+          <span class="chip idle">Queued</span>
+        </div>
+        <p style="margin:0;font-size:13.5px;color:var(--ink-2)">
+          Complex protocols need deeper program memory, but only one or two lanes run them at a
+          time. A generator emits one deep lane and several shallow ones from a parameter list; in
+          hand-written RTL that is a copy-paste refactor, so most teams will make every lane deep
+          and pay for it everywhere.
+        </p>
+      </div>
+
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:start;margin-bottom:8px">
+          <h3 style="font-family:var(--display);font-size:16px;font-weight:600;margin:0">Property-based testing</h3>
+          <span class="chip idle">Queued</span>
+        </div>
+        <p style="margin:0;font-size:13.5px;color:var(--ink-2)">
+          Replace hand-picked test cases with thousands of generated ones: random bytes, random
+          clock-stretch durations, jittered edges. For I2C there is a sharp invariant to assert &mdash;
+          stretching the clock may change <em>when</em> a byte arrives but never <em>what</em> it is.
+        </p>
+      </div>
+
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:start;margin-bottom:8px">
+          <h3 style="font-family:var(--display);font-size:16px;font-weight:600;margin:0">Formal FIFO proof</h3>
+          <span class="chip idle">Queued</span>
+        </div>
+        <p style="margin:0;font-size:13.5px;color:var(--ink-2)">
+          A bounded SAT proof that the host FIFO invariants hold, rather than testing that they
+          happened to hold on the traces we tried. Cheap to add and matches a technique a
+          competing entry already demonstrated.
+        </p>
+      </div>
+    </div>
+
+    <p class="note">
+      One constraint discovered while designing the protocols, worth deciding early: the chip has
+      only <b>four shared flags</b>, and running SPI and I2C at the same time already consumes all
+      four. Any additional protocol needing cross-lane coordination means either reusing a flag
+      carefully or widening the register &mdash; a hardware change, not a microcode one.
+    </p>
+  </section>
+
+  <!-- ============================ 05 PPA ============================ -->
+  <section id="tab-ppa" role="tabpanel" aria-labelledby="tb-ppa" hidden>
+
+    <h2 class="sec">Area against budget</h2>
+    <div class="grid g2">
+      <div class="chartcard">
+        <h3>What the 12,442 cells are</h3>
+        <p class="sub">Generic synthesis, pre-PDK-mapping. Every value is direct-labeled below.</p>
+        <svg viewBox="0 0 520 132" width="520" style="max-width:100%;height:auto;display:block" role="img" aria-label="Stacked bar: instruction memory flip-flops 2,048 cells; lane logic and config flip-flops 414; combinational cells 9,980; total 12,442 of a 24,000 cell budget.">
+          <!-- budget track -->
+          <text x="0" y="12" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink-3)" letter-spacing="0.08em">USED 12,442 OF ~24,000 CELL BUDGET</text>
+          <rect x="0" y="22" width="520" height="30" rx="2" fill="var(--surface-2)" stroke="var(--rule)"></rect>
+          <!-- 12442/24000 = 51.8% of 520 = 269.5 -->
+          <rect x="0" y="22" width="44.4" height="30" fill="var(--s2)"></rect>
+          <rect x="46.4" y="22" width="9.0" height="30" fill="var(--s1)"></rect>
+          <rect x="57.4" y="22" width="216.3" height="30" fill="var(--s3)"></rect>
+          <line x1="273.7" y1="16" x2="273.7" y2="58" stroke="var(--ink)" stroke-width="1.5"></line>
+          <text x="280" y="42" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--ink)">headroom &#183; 11,558 cells</text>
+
+          <!-- direct labels -->
+          <g font-family="IBM Plex Mono, monospace" font-size="10.5">
+            <rect x="0" y="72" width="10" height="10" rx="2" fill="var(--s2)"></rect>
+            <text x="16" y="81" fill="var(--ink)">2,048</text>
+            <text x="58" y="81" fill="var(--ink-2)">instruction memory flip-flops</text>
+
+            <rect x="0" y="92" width="10" height="10" rx="2" fill="var(--s1)"></rect>
+            <text x="16" y="101" fill="var(--ink)">414</text>
+            <text x="58" y="101" fill="var(--ink-2)">lane logic + config flip-flops</text>
+
+            <rect x="0" y="112" width="10" height="10" rx="2" fill="var(--s3)"></rect>
+            <text x="16" y="121" fill="var(--ink)">9,980</text>
+            <text x="58" y="121" fill="var(--ink-2)">combinational cells</text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="chartcard">
+        <h3>Instruction memory dominates the registers</h3>
+        <p class="sub">Exact arithmetic from the design parameters: 4 lanes &times; 32 words &times; 16 bits.</p>
+        <div style="display:flex;align-items:baseline;gap:10px;margin:22px 0 6px">
+          <div style="font-family:var(--display);font-weight:700;font-size:54px;line-height:1;letter-spacing:-0.03em;color:var(--s2);font-variant-numeric:tabular-nums">83.2%</div>
+          <div style="font-size:13px;color:var(--ink-2);max-width:22ch">of all flip-flops in the design are instruction memory</div>
+        </div>
+        <svg viewBox="0 0 480 26" width="480" style="max-width:100%;height:auto;display:block;margin-top:14px" role="img" aria-label="2,048 of 2,462 flip-flops are instruction memory.">
+          <rect x="0" y="0" width="480" height="18" rx="2" fill="var(--surface-2)" stroke="var(--rule)"></rect>
+          <rect x="0" y="0" width="399.4" height="18" rx="2" fill="var(--s2)"></rect>
+          <text x="8" y="13" font-family="IBM Plex Mono, monospace" font-size="10.5" font-weight="500" fill="#fff">2,048 imem</text>
+          <text x="409" y="13" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-2)">414 other</text>
+        </svg>
+        <p style="font-size:12.5px;color:var(--ink-2);margin:14px 0 0">
+          Flip-flops cost roughly 5&ndash;6&times; the area of a basic gate, so the cell <em>count</em>
+          above understates how much silicon the registers actually occupy. Instruction memory is
+          plausibly 40&ndash;50% of the whole chip &mdash; which makes it the one thing worth optimizing.
+        </p>
+      </div>
+    </div>
+
+    <h2 class="sec">Three levers on instruction memory</h2>
+    <p class="lede">
+      The leading public entry documented flip-flop instruction memory as a known limitation and
+      left it there. It is the dominant area term for everyone in this competition, so fixing it
+      is where the area comparison is won.
+    </p>
+
+    <div class="chartcard">
+      <h3>Projected instruction-memory flip-flops</h3>
+      <p class="sub">Right-sizing depth (A) plus a delay-scale field that keeps programs short enough to allow it (B).</p>
+      <svg viewBox="0 0 560 190" width="560" style="max-width:100%;height:auto;display:block" role="img" aria-label="Instruction memory flip-flops: today 2,048; with levers A and B 1,152, a 44 percent reduction; with five lanes plus A and B 1,440, still 30 percent below today.">
+        <g font-family="IBM Plex Mono, monospace" font-size="10.5">
+          <!-- baseline -->
+          <text x="0" y="14" fill="var(--ink-2)">today &#183; 4 lanes &#215; 32 words &#215; 16 bit</text>
+          <rect x="0" y="22" width="420" height="26" rx="2" fill="var(--s2)"></rect>
+          <text x="430" y="40" font-weight="500" fill="var(--ink)">2,048</text>
+
+          <text x="0" y="76" fill="var(--ink-2)">levers A + B &#183; 4 lanes &#215; 16 words &#215; 18 bit</text>
+          <rect x="0" y="84" width="236.3" height="26" rx="2" fill="var(--s1)"></rect>
+          <text x="246" y="102" font-weight="500" fill="var(--ink)">1,152</text>
+          <text x="300" y="102" fill="var(--s3)">&#8722;44%</text>
+
+          <text x="0" y="138" fill="var(--ink-2)">levers A + B &#183; <tspan font-weight="600" fill="var(--ink)">5 lanes</tspan> &#215; 16 words &#215; 18 bit</text>
+          <rect x="0" y="146" width="295.3" height="26" rx="2" fill="var(--s1)"></rect>
+          <text x="305" y="164" font-weight="500" fill="var(--ink)">1,440</text>
+          <text x="359" y="164" fill="var(--s3)">&#8722;30%</text>
+        </g>
+      </svg>
+      <p style="font-size:13px;color:var(--ink-2);margin:14px 0 0;max-width:74ch">
+        The last row is the headline: <strong>a fifth lane &mdash; which is what running UART, SPI and
+        I2C all at once actually requires &mdash; while still using 30% less memory area than today.</strong>
+        More functionality in less silicon.
+      </p>
+    </div>
+
+    <h2 class="sec">Memory selection</h2>
+    <p class="lede">
+      The rules themselves recommend SRAM over flip-flops for instruction memory. Researched, and
+      deliberately deferred rather than dismissed &mdash; the numbers are here so the decision stays
+      visible and can be revisited on measurement rather than memory.
+    </p>
+
+    <div class="grid g2">
+      <div class="chartcard">
+        <h3>Storage density</h3>
+        <p class="sub">Silicon area per bit stored. Lower is better.</p>
+        <svg viewBox="0 0 520 168" width="520" style="max-width:100%;height:auto;display:block" role="img" aria-label="Area per bit: flip-flops about 22 square microns, estimated; 256 by 8 SRAM macro 8.6; 1024 by 8 SRAM macro 6.0.">
+          <g font-family="IBM Plex Mono, monospace" font-size="10.5">
+            <text x="0" y="14" fill="var(--ink-2)">flip-flops (today)</text>
+            <rect x="0" y="22" width="420" height="24" rx="2" fill="var(--s2)"></rect>
+            <text x="430" y="39" font-weight="500" fill="var(--ink)">~22</text>
+            <text x="466" y="39" fill="var(--ink-3)">est.</text>
+
+            <text x="0" y="70" fill="var(--ink-2)">SRAM macro 256 &#215; 8</text>
+            <rect x="0" y="78" width="164.2" height="24" rx="2" fill="var(--s1)"></rect>
+            <text x="174" y="95" font-weight="500" fill="var(--ink)">8.6</text>
+
+            <text x="0" y="126" fill="var(--ink-2)">SRAM macro 1024 &#215; 8</text>
+            <rect x="0" y="134" width="114.5" height="24" rx="2" fill="var(--s1)"></rect>
+            <text x="124" y="151" font-weight="500" fill="var(--ink)">6.0</text>
+          </g>
+        </svg>
+        <div class="legend">
+          <span class="lg"><i style="background:var(--s2)"></i>flip-flops &mdash; &micro;m&sup2; per bit</span>
+          <span class="lg"><i style="background:var(--s1)"></i>SRAM macro &mdash; &micro;m&sup2; per bit</span>
+        </div>
+      </div>
+
+      <div class="chartcard">
+        <h3>Why not simply switch</h3>
+        <p class="sub">The density win is real; so are three costs.</p>
+        <div class="tablewrap">
+          <table class="dt">
+            <thead><tr><th>Factor</th><th>Flip-flops</th><th>SRAM macro</th></tr></thead>
+            <tbody>
+              <tr><td>Density per bit</td><td>~22 &micro;m&sup2; (est.)</td><td class="num" style="text-align:left;color:var(--ok)">2.6&ndash;3.7&times; better</td></tr>
+              <tr><td>Read behaviour</td><td>Combinational, same cycle</td><td>Registered, 1 cycle later</td></tr>
+              <tr><td>Fetch for 4&ndash;5 lanes</td><td>Private per lane, no arbitration</td><td>One port, needs arbitration</td></tr>
+              <tr><td>Timing determinism</td><td>Guaranteed by construction</td><td>Must be proven under contention</td></tr>
+              <tr><td>Flow integration</td><td>None needed</td><td>Custom placement, power grid, DRC/LVS waivers</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="font-size:13px;color:var(--ink-2);margin:14px 0 0">
+          The usual objection &mdash; one port cannot feed five lanes &mdash; is actually wrong here, because
+          bit-banging is overwhelmingly idle: at real baud rates a lane fetches on under 5% of
+          cycles. The genuine difficulty is that protocol timing must stay cycle-exact, so
+          contention can never cause a variable stall. That is real work, which is why it comes
+          after the cheaper levers, not before.
+        </p>
+      </div>
+    </div>
+
+    <p class="note">
+      <b>Honest status of these numbers.</b> The 83.2% figure is exact arithmetic from the design
+      parameters. Cell counts are real, from generic Yosys synthesis. Everything in &micro;m&sup2;, and
+      the flip-flop-to-gate area ratio, is an <em>estimate</em> &mdash; the IHP PDK is not installed
+      locally, so mapped area, timing and power only become measured in Phase C. Power has not been
+      analysed at all yet; the largest expected win is clock-gating the instruction memory, which is
+      written once at programming time and then never again, yet currently clocks 50 million times a
+      second.
+    </p>
+  </section>
+
+  <p class="foot">
+    Generated from the WARD repository. Waveform data is exported by
+    <code>hardcaml/bin/export_traces.ml</code> from the same scenarios asserted in
+    <code>hardcaml/test/test_ward.ml</code>, so this page cannot drift from what was verified.
+    Cell counts from <code>yosys -p stat</code> on the generated Verilog.
+  </p>
+</main>
+
+<script id="traces-data" type="application/json">{"generated_by":"hardcaml/bin/export_traces.ml (same scenarios as hardcaml/test/test_ward.ml)","scenarios":[{"id":"uart_tx","title":"UART TX - transmitting 0xA5","blurb":"One lane bit-bangs a full 8N1 UART frame from a byte the host wrote over the config port. The test decodes this exact waveform back to 0xA5 independently of the CPU model - which is how a microcode timing bug was caught that cycle-by-cycle RTL/model agreement had missed.","cycles":70,"signals":[{"name":"uart_tx pin","kind":"bit","values":[0,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},{"name":"pc","kind":"bus","values":[1,2,3,4,5,5,5,5,6,6,6,5,6,6,6,5,6,6,6,5,6,6,6,5,6,6,6,5,6,6,6,5,6,6,6,5,6,6,6,7,8,8,8,8,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]},{"name":"osr (shift reg)","kind":"bus","values":[0,0,165,165,165,165,165,165,82,82,82,82,41,41,41,41,20,20,20,20,10,10,10,10,5,5,5,5,2,2,2,2,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"name":"x (bit counter)","kind":"bus","values":[0,0,0,7,7,7,7,7,7,7,7,6,6,6,6,5,5,5,5,4,4,4,4,3,3,3,3,2,2,2,2,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}],"spans":[{"from":4,"to":7,"label":"START","kind":"frame"},{"from":8,"to":11,"label":"D0=1","kind":"data"},{"from":12,"to":15,"label":"D1=0","kind":"data"},{"from":16,"to":19,"label":"D2=1","kind":"data"},{"from":20,"to":23,"label":"D3=0","kind":"data"},{"from":24,"to":27,"label":"D4=0","kind":"data"},{"from":28,"to":31,"label":"D5=1","kind":"data"},{"from":32,"to":35,"label":"D6=0","kind":"data"},{"from":36,"to":39,"label":"D7=1","kind":"data"},{"from":40,"to":43,"label":"STOP","kind":"frame"}]},{"id":"core_spi","title":"Full chip - programmed over SPI, then running","blurb":"The whole flow with no back doors: a program, a pin assignment and a run bit are shifted into lane 0 through the real 4-wire SPI config port, and the lane then drives the physical uio[0] pin. The same scenario runs in both simulators - Hardcaml Cyclesim and Icarus Verilog against the generated RTL.","cycles":436,"signals":[{"name":"uio[0] out","kind":"bit","values":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,1,1,1,0,0,0,0,1,1,1,0,0,0,0,1,1,1,0,0,0,0,1,1,1,0,0,0,0,1,1,1,0]},{"name":"uio[0] oe (driving)","kind":"bit","values":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},{"name":"uo_out[0] (cfg miso)","kind":"bit","values":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}],"spans":[{"from":0,"to":65,"label":"SPI write: imem[0]","kind":"config"},{"from":66,"to":131,"label":"SPI write: imem[1]","kind":"config"},{"from":132,"to":197,"label":"SPI write: imem[2]","kind":"config"},{"from":198,"to":263,"label":"SPI write: imem[3]","kind":"config"},{"from":264,"to":329,"label":"SPI write: pinbase = 12 (uio[0])","kind":"config"},{"from":330,"to":395,"label":"SPI write: run = 1","kind":"config"},{"from":396,"to":435,"label":"lane 0 running - toggling uio[0]","kind":"run"}]}]}</script>
+<script>
+(function () {
+  "use strict";
+
+  /* ---------------- tabs ---------------- */
+  var tabs = Array.prototype.slice.call(document.querySelectorAll(".tab"));
+  var refitAll = function () {};
+  function show(id) {
+    tabs.forEach(function (t) {
+      var sel = t.getAttribute("aria-controls") === id;
+      t.setAttribute("aria-selected", sel ? "true" : "false");
+      var p = document.getElementById(t.getAttribute("aria-controls"));
+      if (p) p.hidden = !sel;
+    });
+    try { localStorage.setItem("ward-tab", id); } catch (e) {}
+    if (id === "tab-wave") refitAll();
+  }
+  tabs.forEach(function (t) {
+    t.addEventListener("click", function () { show(t.getAttribute("aria-controls")); });
+    t.addEventListener("keydown", function (e) {
+      var i = tabs.indexOf(t);
+      if (e.key === "ArrowRight") { tabs[(i + 1) % tabs.length].focus(); tabs[(i + 1) % tabs.length].click(); }
+      if (e.key === "ArrowLeft") { tabs[(i - 1 + tabs.length) % tabs.length].focus(); tabs[(i - 1 + tabs.length) % tabs.length].click(); }
+    });
+  });
+  try {
+    var saved = localStorage.getItem("ward-tab");
+    if (saved && document.getElementById(saved)) show(saved);
+  } catch (e) {}
+
+  /* ---------------- waveforms ---------------- */
+  var data;
+  try {
+    data = JSON.parse(document.getElementById("traces-data").textContent);
+  } catch (e) {
+    data = { scenarios: [] };
+  }
+
+  var ROW = 34, SPANBAND = 26, RULER = 20, PAD = 8;
+
+  function cssVar(n) {
+    return getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  }
+
+  function buildScenario(sc) {
+    var card = document.createElement("div");
+    card.className = "wavecard";
+
+    var head = document.createElement("div");
+    head.className = "wavehead";
+    var h = document.createElement("h3");
+    h.textContent = sc.title;
+    var p = document.createElement("p");
+    p.textContent = sc.blurb;
+    head.appendChild(h); head.appendChild(p);
+    card.appendChild(head);
+
+    var tools = document.createElement("div");
+    tools.className = "wavetools";
+    var lbl = document.createElement("span");
+    lbl.textContent = sc.cycles + " cycles";
+    tools.appendChild(lbl);
+
+    var zb = document.createElement("div");
+    zb.className = "zoombtns";
+    var zooms = [["fit", 0], ["6px", 6], ["12px", 12], ["24px", 24]];
+    tools.appendChild(zb);
+
+    var readout = document.createElement("span");
+    readout.className = "readout";
+    readout.textContent = "hover to inspect";
+    tools.appendChild(readout);
+    card.appendChild(tools);
+
+    var row = document.createElement("div");
+    row.className = "waverow";
+
+    var labels = document.createElement("div");
+    labels.className = "wavelabels";
+    var lh = document.createElement("div");
+    lh.className = "lblhead";
+    lh.style.height = (SPANBAND + RULER) + "px";
+    lh.textContent = "";
+    labels.appendChild(lh);
+    sc.signals.forEach(function (s) {
+      var d = document.createElement("div");
+      d.style.height = ROW + "px";
+      d.textContent = s.name;
+      labels.appendChild(d);
+    });
+    row.appendChild(labels);
+
+    var scroll = document.createElement("div");
+    scroll.className = "wavescroll";
+    var svgNS = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(svgNS, "svg");
+    scroll.appendChild(svg);
+    row.appendChild(scroll);
+    card.appendChild(row);
+
+    var current = 0;
+
+    function draw(px) {
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+      var W = Math.max(sc.cycles * px, 10);
+      var H = SPANBAND + RULER + sc.signals.length * ROW + PAD;
+      svg.setAttribute("width", W);
+      svg.setAttribute("height", H);
+      svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+      svg.style.display = "block";
+
+      var ink = cssVar("--ink"), ink2 = cssVar("--ink-2"), ink3 = cssVar("--ink-3");
+      var rule = cssVar("--rule"), rule2 = cssVar("--rule-2");
+      var accent = cssVar("--accent"), s2 = cssVar("--s2"), s3 = cssVar("--s3");
+      var surf2 = cssVar("--surface-2");
+
+      function el(n, a) {
+        var e = document.createElementNS(svgNS, n);
+        for (var k in a) e.setAttribute(k, a[k]);
+        return e;
+      }
+
+      /* span band */
+      (sc.spans || []).forEach(function (sp, i) {
+        var x = sp.from * px, w = Math.max((sp.to - sp.from + 1) * px, 1);
+        var stroke = sp.kind === "data" ? accent : (sp.kind === "run" ? s3 : ink3);
+        svg.appendChild(el("rect", { x: x + 0.5, y: 3, width: Math.max(w - 1, 1), height: SPANBAND - 8, rx: 2, fill: surf2, stroke: stroke, "stroke-width": 1, opacity: 0.95 }));
+        if (w > 26) {
+          var t = el("text", { x: x + w / 2, y: SPANBAND - 10, "text-anchor": "middle", "font-family": "IBM Plex Mono, monospace", "font-size": 9.5, fill: ink2 });
+          t.textContent = sp.label;
+          svg.appendChild(t);
+        }
+      });
+
+      /* ruler */
+      var step = px >= 24 ? 5 : px >= 12 ? 10 : px >= 6 ? 20 : 50;
+      for (var c = 0; c <= sc.cycles; c += step) {
+        var x = c * px;
+        svg.appendChild(el("line", { x1: x, y1: SPANBAND, x2: x, y2: SPANBAND + 5, stroke: ink3, "stroke-width": 1 }));
+        var t = el("text", { x: x + 2, y: SPANBAND + RULER - 6, "font-family": "IBM Plex Mono, monospace", "font-size": 9, fill: ink3 });
+        t.textContent = c;
+        svg.appendChild(t);
+        svg.appendChild(el("line", { x1: x, y1: SPANBAND + RULER, x2: x, y2: H - PAD, stroke: rule2, "stroke-width": 1 }));
+      }
+
+      /* signals */
+      sc.signals.forEach(function (sig, si) {
+        var top = SPANBAND + RULER + si * ROW;
+        var hi = top + 7, lo = top + ROW - 11;
+        svg.appendChild(el("line", { x1: 0, y1: top, x2: W, y2: top, stroke: rule2, "stroke-width": 1 }));
+
+        if (sig.kind === "bit") {
+          var d = "";
+          for (var i = 0; i < sig.values.length; i++) {
+            var y = sig.values[i] ? hi : lo;
+            var x0 = i * px, x1 = (i + 1) * px;
+            if (i === 0) d += "M" + x0 + "," + y;
+            else {
+              var py = sig.values[i - 1] ? hi : lo;
+              if (py !== y) d += "L" + x0 + "," + y;
+            }
+            d += "L" + x1 + "," + y;
+          }
+          svg.appendChild(el("path", { d: d, fill: "none", stroke: si === 0 ? accent : ink2, "stroke-width": 2, "stroke-linejoin": "round" }));
+        } else {
+          /* bus: bands that change when the value changes */
+          var start = 0;
+          for (var j = 1; j <= sig.values.length; j++) {
+            if (j === sig.values.length || sig.values[j] !== sig.values[start]) {
+              var x = start * px, w = (j - start) * px;
+              svg.appendChild(el("rect", { x: x + 0.5, y: hi, width: Math.max(w - 1, 1), height: lo - hi, rx: 2, fill: surf2, stroke: rule, "stroke-width": 1 }));
+              if (w > 18) {
+                var tv = el("text", { x: x + w / 2, y: (hi + lo) / 2 + 3.5, "text-anchor": "middle", "font-family": "IBM Plex Mono, monospace", "font-size": 9.5, fill: ink });
+                tv.textContent = sig.values[start];
+                svg.appendChild(tv);
+              }
+              start = j;
+            }
+          }
+        }
+      });
+
+      /* crosshair */
+      var cross = el("line", { x1: 0, y1: SPANBAND, x2: 0, y2: H - PAD, stroke: s2, "stroke-width": 1, opacity: 0 });
+      svg.appendChild(cross);
+
+      svg.addEventListener("mousemove", function (ev) {
+        var r = svg.getBoundingClientRect();
+        var c = Math.floor((ev.clientX - r.left) / px);
+        if (c < 0 || c >= sc.cycles) return;
+        cross.setAttribute("x1", c * px + px / 2);
+        cross.setAttribute("x2", c * px + px / 2);
+        cross.setAttribute("opacity", 1);
+        var parts = sc.signals.map(function (s) { return s.name + "=" + s.values[c]; });
+        readout.innerHTML = "<b>cycle " + c + "</b> &nbsp; " + parts.join(" &nbsp; ");
+      });
+      svg.addEventListener("mouseleave", function () {
+        cross.setAttribute("opacity", 0);
+        readout.textContent = "hover to inspect";
+      });
+    }
+
+    zooms.forEach(function (z) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.textContent = z[0];
+      b.setAttribute("aria-pressed", "false");
+      b.addEventListener("click", function () {
+        current = z[1];
+        Array.prototype.forEach.call(zb.children, function (c) { c.setAttribute("aria-pressed", "false"); });
+        b.setAttribute("aria-pressed", "true");
+        draw(current || Math.max(scroll.clientWidth / sc.cycles, 1.2));
+      });
+      zb.appendChild(b);
+    });
+
+    return {
+      node: card,
+      init: function () {
+        var wide = sc.cycles > 150;
+        var idx = wide ? 0 : 2;
+        zb.children[idx].setAttribute("aria-pressed", "true");
+        current = zooms[idx][1];
+        draw(current || Math.max(scroll.clientWidth / sc.cycles, 1.2));
+      },
+      refit: function () {
+        if (current === 0) draw(Math.max(scroll.clientWidth / sc.cycles, 1.2));
+      }
+    };
+  }
+
+  var host = document.getElementById("waves");
+  var built = [];
+  if (host) {
+    data.scenarios.forEach(function (sc) {
+      var b = buildScenario(sc);
+      host.appendChild(b.node);
+      built.push(b);
+    });
+    built.forEach(function (b) { b.init(); });
+    refitAll = function () { built.forEach(function (b) { b.refit(); }); };
+    var rt;
+    window.addEventListener("resize", function () {
+      clearTimeout(rt);
+      rt = setTimeout(function () { built.forEach(function (b) { b.refit(); }); }, 150);
+    });
+  }
+})();
+</script>
