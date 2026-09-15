@@ -1,5 +1,5 @@
 (* Exports per-cycle signal traces from the *same* scenarios the test suite
-   verifies (../test/test_ward.ml), as JSON for the progress dashboard.
+   verifies (../test/test_gp_pae.ml), as JSON for the progress dashboard.
 
    The point of sharing scenarios with the tests rather than writing
    bespoke demo stimulus: whatever the dashboard draws is guaranteed to be
@@ -11,7 +11,7 @@
    writes ../dashboard/traces.json *)
 
 open Hardcaml
-open Ward
+open Gp_pae
 
 module SeqSim = Cyclesim.With_interface (Sequencer.I) (Sequencer.O)
 module CoreSim = Cyclesim.With_interface (Core.I) (Core.O)
@@ -239,7 +239,7 @@ let () =
   let out_path = if Array.length Sys.argv > 1 then Sys.argv.(1) else "../dashboard/traces.json" in
   str "{";
   json_string "generated_by"; str ":";
-  json_string "hardcaml/bin/export_traces.ml (same scenarios as hardcaml/test/test_ward.ml)";
+  json_string "hardcaml/bin/export_traces.ml (same scenarios as hardcaml/test/test_gp_pae.ml)";
   str ",";
   json_string "scenarios"; str ":[";
   uart_tx_scenario ();

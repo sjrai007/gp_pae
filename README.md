@@ -1,11 +1,11 @@
-# WARD — Reprogrammable Protocol Emulator ASIC
+# GP_PAE — Reprogrammable Protocol Emulator ASIC
 
 Entry for the [Jane Street Protocol Emulator ASIC Competition](https://blog.janestreet.com/protocol-emulator-asic-competition/):
 an open-source, general-purpose protocol emulator ASIC on Tiny Tapeout /
 IHP 130nm CMOS5L, built from a **tiny CPU whose instruction set reads pins,
 writes pins, and counts cycles** — per the brief, not fixed protocol blocks.
 
-WARD is **N independent tiny sequencer "lanes"** sharing a pin crossbar and a
+GP_PAE is **N independent tiny sequencer "lanes"** sharing a pin crossbar and a
 post-fabrication-writable instruction store, so it emulates UART, SPI, and
 I2C simultaneously and independently out of the box, and can be reprogrammed
 after fabrication to emulate protocols that don't exist yet — including the
@@ -52,8 +52,9 @@ detailed checklist.
 
 ```sh
 # Hardcaml core: build + the full cross-checked test suite + regenerate Verilog
+# (hardcaml-ward is just the local opam switch name, unrelated to the project)
 cd hardcaml && eval "$(opam env --switch=hardcaml-ward --set-switch)"
-dune build && dune exec test/test_ward.exe   # 742 checks, 0 failures
+dune build && dune exec test/test_gp_pae.exe   # 742 checks, 0 failures
 dune exec bin/generate_rtl.exe               # writes ../src/generated/core.v
 
 # Tiny Tapeout cocotb testbench against the generated Verilog, independently

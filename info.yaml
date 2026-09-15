@@ -1,6 +1,6 @@
 # Tiny Tapeout project information
 project:
-  title:        "WARD — Reprogrammable Protocol Emulator"
+  title:        "GP_PAE — Reprogrammable Protocol Emulator"
   author:       ""      # TODO: fill in team name(s) before submission
   discord:      ""      # TODO
   description:  "N-lane programmable pin sequencer (tiny per-lane CPU) that emulates UART, SPI and I2C, reprogrammable post-fabrication for new protocols"
@@ -15,7 +15,7 @@ project:
   tiles: "6x4"
 
   # Your top module name must start with "tt_um_". Make it unique by including your github username:
-  top_module:  "tt_um_ward_protocol_emulator"
+  top_module:  "tt_um_gp_pae"
 
   # List your project's source files here.
   # Source files must be in ./src and you must list each source file separately, one per line.

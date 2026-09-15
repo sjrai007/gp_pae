@@ -1,4 +1,4 @@
-(* WARD config/data port: a 4-wire SPI slave exposing a flat 8-bit-address /
+(* GP_PAE config/data port: a 4-wire SPI slave exposing a flat 8-bit-address /
    16-bit-data register interface, used both to load lane instruction
    memories and lane config registers (programming) and to push/pull live
    protocol data bytes to/from each lane's host FIFO (operation) -- see

@@ -1,10 +1,10 @@
-# WARD Protocol Microcode Design: UART RX, SPI Master, I2C Master
+# GP_PAE Protocol Microcode Design: UART RX, SPI Master, I2C Master
 
 Design document for the three baseline protocols. Grounded in a
 line-by-line read of `../isa.ml` (encode/decode + `Isa.Interp`),
 `../sequencer.ml` (RTL semantics — which resolved several ambiguities the
 architecture doc glosses over), `../core.ml` (pin crossbar, IRQ register,
-config address map), and `../../test/test_ward.ml` (the `run_and_compare` /
+config address map), and `../../test/test_gp_pae.ml` (the `run_and_compare` /
 `test_uart_tx` pattern this design extends).
 
 Status: **design only — none of this is implemented yet.** `protocols/`
@@ -674,7 +674,7 @@ time-multiplexing an existing flag.
 - `../core.ml` — pin crossbar (`pinbase`, `global_oe`/`global_val`,
   `flat_in`), shared `irq_flags`, config address map — needed for the
   5-lane pinbase assignments and the Core-level test harness
-- `../../test/test_ward.ml` — `run_and_compare`, `test_uart_tx`,
+- `../../test/test_gp_pae.ml` — `run_and_compare`, `test_uart_tx`,
   `test_core_integration`; SPI/I2C directed tests extend the last of these
 - `uart.ml` / `spi.ml` / `i2c.ml` (this directory) — do not yet exist;
   interfaces sketched in §4

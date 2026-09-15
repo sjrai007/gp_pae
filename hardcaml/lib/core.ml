@@ -1,4 +1,4 @@
-(* WARD top level: instantiates [num_lanes] [Sequencer]s, a [Config_port]
+(* GP_PAE top level: instantiates [num_lanes] [Sequencer]s, a [Config_port]
    SPI slave, a flat 20-pin crossbar mapping each lane's local 8-pin window
    onto a subset of the chip's real GPIOs, and a small shared 4-flag IRQ
    register -- see ARCHITECTURE.md \167\167 1-6.

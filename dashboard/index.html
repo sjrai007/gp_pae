@@ -1,4 +1,4 @@
-<title>WARD Tapeout Tracker</title>
+<title>GP_PAE Tapeout Tracker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap">
@@ -360,7 +360,7 @@
 <header class="masthead">
   <div class="wrap masthead-inner">
     <div class="mast-top">
-      <h1 class="mast-name">WARD</h1>
+      <h1 class="mast-name">GP_PAE</h1>
       <span class="mast-sub">4-lane programmable protocol emulator &mdash; build &amp; verification status</span>
     </div>
     <p class="mast-desc">
@@ -372,10 +372,10 @@
       generated from the same simulations the test suite asserts against.
     </p>
     <dl class="specstrip">
-      <div class="spec"><dt>Part</dt><dd>tt_um_ward_&#8203;protocol_emulator</dd></div>
+      <div class="spec"><dt>Part</dt><dd>tt_um_gp_pae</dd></div>
       <div class="spec"><dt>Process</dt><dd>IHP SG13G2 &middot; 130 nm</dd></div>
       <div class="spec"><dt>Area budget</dt><dd>6&times;4 tiles &middot; ~0.7 mm&sup2;</dd></div>
-      <div class="spec"><dt>Clock target</dt><dd>50 MHz (pre-STA)</dd></div>
+      <div class="spec"><dt>Clock target</dt><dd>50 MHz &middot; inherited default</dd></div>
       <div class="spec"><dt>Submission</dt><dd>2027-01-18</dd></div>
       <div class="spec"><dt>Shuttle</dt><dd>Mar 2027 CMOS5L</dd></div>
     </dl>
@@ -653,7 +653,7 @@
 
       <div class="bug">
         <h3>Every UART bit ran one cycle long</h3>
-        <div class="where">hardcaml/test/test_ward.ml &middot; the UART TX microcode</div>
+        <div class="where">hardcaml/test/test_gp_pae.ml &middot; the UART TX microcode</div>
         <p>
           The loop-closing jump costs a real clock cycle even when it is not taken, and that
           cycle was not budgeted out of the bit-period delay. The hardware and the software model
@@ -898,6 +898,40 @@
   <!-- ============================ 05 PPA ============================ -->
   <section id="tab-ppa" role="tabpanel" aria-labelledby="tb-ppa" hidden>
 
+    <h2 class="sec">What the budget and the clock actually are</h2>
+    <div class="grid g2" style="margin-bottom:8px">
+      <div class="panel">
+        <h3 style="font-family:var(--display);font-size:15px;font-weight:600;margin:0 0 8px">6&times;4 tiles</h3>
+        <p style="margin:0 0 8px;font-size:13.5px;color:var(--ink-2)">
+          Tiny Tapeout puts many independent projects on one shared die and multiplexes them onto a
+          common set of I/O pins. A <em>tile</em> is the unit of floor space each project rents.
+          6&times;4 means a rectangle 6 tiles wide and 4 tall &mdash; <b>24 tiles</b>. The rules put a
+          tile at roughly 200&times;150&nbsp;&micro;m, so the allocation is about
+          <b>0.7&nbsp;mm&sup2;</b>, and suggest budgeting <b>~1,000 logic cells per tile</b>.
+        </p>
+        <p style="margin:0;font-size:13.5px;color:var(--ink-2)">
+          That ~24,000-cell figure is where the budget number on this page comes from. It is
+          guidance for planning, not a hard gate &mdash; the real constraint is whether the design
+          places and routes inside the rectangle, which only the full flow answers.
+        </p>
+      </div>
+      <div class="panel">
+        <h3 style="font-family:var(--display);font-size:15px;font-weight:600;margin:0 0 8px">50 MHz</h3>
+        <p style="margin:0 0 8px;font-size:13.5px;color:var(--ink-2)">
+          Worth being straight about: this is <b>not a derived or verified number</b>. It is the
+          Tiny Tapeout template's out-of-the-box default &mdash; <code>CLOCK_PERIOD: 20</code>
+          nanoseconds in the hardening config &mdash; carried through unchanged. No static timing
+          analysis has run, so whether the design actually closes at 50 MHz is unknown.
+        </p>
+        <p style="margin:0;font-size:13.5px;color:var(--ink-2)">
+          Two real constraints sit around it. Tiny Tapeout's I/O is rated to about 33 MHz on
+          outputs, so pins cannot be toggled at full core speed regardless. And 10BASE-T at 10 Mbit
+          leaves only <b>5 core cycles per bit</b> &mdash; tight for a CPU that needs at least one
+          cycle per instruction, and the strongest argument for raising the clock if timing allows.
+        </p>
+      </div>
+    </div>
+
     <h2 class="sec">Area against budget</h2>
     <div class="grid g2">
       <div class="chartcard">
@@ -955,8 +989,17 @@
     <h2 class="sec">Three levers on instruction memory</h2>
     <p class="lede">
       The leading public entry documented flip-flop instruction memory as a known limitation and
-      left it there. It is the dominant area term for everyone in this competition, so fixing it
-      is where the area comparison is won.
+      left it there. It is the dominant area term for everyone who built this architecture &mdash;
+      which, judging by the public entries, is everyone.
+    </p>
+    <p class="note" style="margin-bottom:18px">
+      <b>To be precise about why this matters.</b> Area is not itself a judging criterion &mdash; the
+      stated criteria are unique functionality and novel design/verification methodology, and the
+      only hard area requirement is fitting inside 6&times;4 tiles, which the design already does
+      with room to spare. Instruction memory matters because it is the <em>currency</em>: every
+      flip-flop freed there buys a lane or a protocol that a competitor spending the same silicon
+      on oversized program memory cannot fit. The goal is functionality per tile, not the smallest
+      possible chip.
     </p>
 
     <div class="chartcard">
@@ -1057,14 +1100,14 @@
   </section>
 
   <p class="foot">
-    Generated from the WARD repository. Waveform data is exported by
+    Generated from the GP_PAE repository. Waveform data is exported by
     <code>hardcaml/bin/export_traces.ml</code> from the same scenarios asserted in
-    <code>hardcaml/test/test_ward.ml</code>, so this page cannot drift from what was verified.
+    <code>hardcaml/test/test_gp_pae.ml</code>, so this page cannot drift from what was verified.
     Cell counts from <code>yosys -p stat</code> on the generated Verilog.
   </p>
 </main>
 
-<script id="traces-data" type="application/json">{"generated_by":"hardcaml/bin/export_traces.ml (same scenarios as hardcaml/test/test_ward.ml)","scenarios":[{"id":"uart_tx","title":"UART TX - transmitting 0xA5","blurb":"One lane bit-bangs a full 8N1 UART frame from a byte the host wrote over the config port. The test decodes this exact waveform back to 0xA5 independently of the CPU model - which is how a microcode timing bug was caught that cycle-by-cycle RTL/model agreement had missed.","cycles":70,"signals":[{"name":"uart_tx pin","kind":"bit","values":[0,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},{"name":"pc","kind":"bus","values":[1,2,3,4,5,5,5,5,6,6,6,5,6,6,6,5,6,6,6,5,6,6,6,5,6,6,6,5,6,6,6,5,6,6,6,5,6,6,6,7,8,8,8,8,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]},{"name":"osr (shift reg)","kind":"bus","values":[0,0,165,165,165,165,165,165,82,82,82,82,41,41,41,41,20,20,20,20,10,10,10,10,5,5,5,5,2,2,2,2,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"name":"x (bit counter)","kind":"bus","values":[0,0,0,7,7,7,7,7,7,7,7,6,6,6,6,5,5,5,5,4,4,4,4,3,3,3,3,2,2,2,2,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}],"spans":[{"from":4,"to":7,"label":"START","kind":"frame"},{"from":8,"to":11,"label":"D0=1","kind":"data"},{"from":12,"to":15,"label":"D1=0","kind":"data"},{"from":16,"to":19,"label":"D2=1","kind":"data"},{"from":20,"to":23,"label":"D3=0","kind":"data"},{"from":24,"to":27,"label":"D4=0","kind":"data"},{"from":28,"to":31,"label":"D5=1","kind":"data"},{"from":32,"to":35,"label":"D6=0","kind":"data"},{"from":36,"to":39,"label":"D7=1","kind":"data"},{"from":40,"to":43,"label":"STOP","kind":"frame"}]},{"id":"core_spi","title":"Full chip - programmed over SPI, then running","blurb":"The whole flow with no back doors: a program, a pin assignment and a run bit are shifted into lane 0 through the real 4-wire SPI config port, and the lane then drives the physical uio[0] pin. The same scenario runs in both simulators - Hardcaml Cyclesim and Icarus Verilog against the generated RTL.","cycles":436,"signals":[{"name":"uio[0] out","kind":"bit","values":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,1,1,1,0,0,0,0,1,1,1,0,0,0,0,1,1,1,0,0,0,0,1,1,1,0,0,0,0,1,1,1,0]},{"name":"uio[0] oe (driving)","kind":"bit","values":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},{"name":"uo_out[0] (cfg miso)","kind":"bit","values":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}],"spans":[{"from":0,"to":65,"label":"SPI write: imem[0]","kind":"config"},{"from":66,"to":131,"label":"SPI write: imem[1]","kind":"config"},{"from":132,"to":197,"label":"SPI write: imem[2]","kind":"config"},{"from":198,"to":263,"label":"SPI write: imem[3]","kind":"config"},{"from":264,"to":329,"label":"SPI write: pinbase = 12 (uio[0])","kind":"config"},{"from":330,"to":395,"label":"SPI write: run = 1","kind":"config"},{"from":396,"to":435,"label":"lane 0 running - toggling uio[0]","kind":"run"}]}]}</script>
+<script id="traces-data" type="application/json">{"generated_by":"hardcaml/bin/export_traces.ml (same scenarios as hardcaml/test/test_gp_pae.ml)","scenarios":[{"id":"uart_tx","title":"UART TX - transmitting 0xA5","blurb":"One lane bit-bangs a full 8N1 UART frame from a byte the host wrote over the config port. The test decodes this exact waveform back to 0xA5 independently of the CPU model - which is how a microcode timing bug was caught that cycle-by-cycle RTL/model agreement had missed.","cycles":70,"signals":[{"name":"uart_tx pin","kind":"bit","values":[0,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},{"name":"pc","kind":"bus","values":[1,2,3,4,5,5,5,5,6,6,6,5,6,6,6,5,6,6,6,5,6,6,6,5,6,6,6,5,6,6,6,5,6,6,6,5,6,6,6,7,8,8,8,8,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]},{"name":"osr (shift reg)","kind":"bus","values":[0,0,165,165,165,165,165,165,82,82,82,82,41,41,41,41,20,20,20,20,10,10,10,10,5,5,5,5,2,2,2,2,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"name":"x (bit counter)","kind":"bus","values":[0,0,0,7,7,7,7,7,7,7,7,6,6,6,6,5,5,5,5,4,4,4,4,3,3,3,3,2,2,2,2,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}],"spans":[{"from":4,"to":7,"label":"START","kind":"frame"},{"from":8,"to":11,"label":"D0=1","kind":"data"},{"from":12,"to":15,"label":"D1=0","kind":"data"},{"from":16,"to":19,"label":"D2=1","kind":"data"},{"from":20,"to":23,"label":"D3=0","kind":"data"},{"from":24,"to":27,"label":"D4=0","kind":"data"},{"from":28,"to":31,"label":"D5=1","kind":"data"},{"from":32,"to":35,"label":"D6=0","kind":"data"},{"from":36,"to":39,"label":"D7=1","kind":"data"},{"from":40,"to":43,"label":"STOP","kind":"frame"}]},{"id":"core_spi","title":"Full chip - programmed over SPI, then running","blurb":"The whole flow with no back doors: a program, a pin assignment and a run bit are shifted into lane 0 through the real 4-wire SPI config port, and the lane then drives the physical uio[0] pin. The same scenario runs in both simulators - Hardcaml Cyclesim and Icarus Verilog against the generated RTL.","cycles":436,"signals":[{"name":"uio[0] out","kind":"bit","values":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,1,1,1,0,0,0,0,1,1,1,0,0,0,0,1,1,1,0,0,0,0,1,1,1,0,0,0,0,1,1,1,0]},{"name":"uio[0] oe (driving)","kind":"bit","values":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},{"name":"uo_out[0] (cfg miso)","kind":"bit","values":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}],"spans":[{"from":0,"to":65,"label":"SPI write: imem[0]","kind":"config"},{"from":66,"to":131,"label":"SPI write: imem[1]","kind":"config"},{"from":132,"to":197,"label":"SPI write: imem[2]","kind":"config"},{"from":198,"to":263,"label":"SPI write: imem[3]","kind":"config"},{"from":264,"to":329,"label":"SPI write: pinbase = 12 (uio[0])","kind":"config"},{"from":330,"to":395,"label":"SPI write: run = 1","kind":"config"},{"from":396,"to":435,"label":"lane 0 running - toggling uio[0]","kind":"run"}]}]}</script>
 <script>
 (function () {
   "use strict";
@@ -1079,7 +1122,7 @@
       var p = document.getElementById(t.getAttribute("aria-controls"));
       if (p) p.hidden = !sel;
     });
-    try { localStorage.setItem("ward-tab", id); } catch (e) {}
+    try { localStorage.setItem("gp_pae-tab", id); } catch (e) {}
     if (id === "tab-wave") refitAll();
   }
   tabs.forEach(function (t) {
@@ -1091,7 +1134,7 @@
     });
   });
   try {
-    var saved = localStorage.getItem("ward-tab");
+    var saved = localStorage.getItem("gp_pae-tab");
     if (saved && document.getElementById(saved)) show(saved);
   } catch (e) {}
 

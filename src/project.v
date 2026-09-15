@@ -1,5 +1,5 @@
 /*
- * WARD -- reprogrammable protocol emulator
+ * GP_PAE -- reprogrammable protocol emulator
  * Jane Street Protocol Emulator ASIC Competition
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -7,14 +7,14 @@
  * produced by `dune exec bin/generate_rtl.exe` from hardcaml/ -- see
  * ARCHITECTURE.md; do not hand-edit core.v). This file only does the two
  * things Hardcaml doesn't know about: the tt_um_* port/name convention
- * (including inverting rst_n into ward_core's active-high `clear`) and
+ * (including inverting rst_n into gp_pae_core's active-high `clear`) and
  * tying off `ena` (always 1 whenever the design is powered, per Tiny
  * Tapeout's convention -- nothing here depends on it).
  */
 
 `default_nettype none
 
-module tt_um_ward_protocol_emulator (
+module tt_um_gp_pae (
     input  wire [7:0] ui_in,    // Dedicated inputs -- see ARCHITECTURE.md \S5: ui_in[2:0] = cfg_sclk/mosi/cs_n
     output wire [7:0] uo_out,   // Dedicated outputs -- uo_out[0] = cfg_miso
     input  wire [7:0] uio_in,   // IOs: Input path
@@ -27,7 +27,7 @@ module tt_um_ward_protocol_emulator (
 
   wire _unused = &{ena, 1'b0};
 
-  ward_core core (
+  gp_pae_core core (
       .clock  (clk),
       .clear  (~rst_n),
       .ui_in  (ui_in),

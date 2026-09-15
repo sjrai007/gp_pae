@@ -1,4 +1,4 @@
-(* WARD lane instruction set: encode/decode + a cycle-accurate reference
+(* GP_PAE lane instruction set: encode/decode + a cycle-accurate reference
    interpreter.
 
    16-bit instruction word, uniform layout for every opcode class:

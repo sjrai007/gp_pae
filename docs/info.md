@@ -5,14 +5,16 @@ information below and delete any unused sections.
 
 ## How it works
 
-WARD is 4 independent tiny programmable pin-sequencers ("lanes") sharing a
+GP_PAE is 4 independent tiny programmable pin-sequencers ("lanes") sharing a
 20-pin crossbar and a 4-wire SPI config/data port. Each lane is a small CPU
 whose 8 opcodes read pins, write pins, and count cycles (see
 [`ARCHITECTURE.md`](../ARCHITECTURE.md) for the full instruction set) — no
 protocol logic is fixed in silicon; UART/SPI/I2C/anything-else is a program,
 not a hardware block. A lane's instruction memory, which pins it's windowed
-onto, and its clock divider are all writable over the SPI port at any time,
-so the chip is reprogrammable for new protocols after fabrication.
+onto, and its run state are all writable over the SPI port at any time, so
+the chip is reprogrammable for new protocols after fabrication. (Bit timing
+comes from each instruction's own delay field -- there is no clock-divider
+register; see ARCHITECTURE.md §1.)
 
 ## How to test
 
@@ -24,7 +26,7 @@ MSB-first: `[rw, addr, data_hi, data_lo]` (`rw` bit0: 1=write, 0=read).
 pinbase, 1 = jmp_pin, 2 = run, 3 = TX FIFO write, 4 = RX FIFO read).
 
 1. Write a lane's instruction memory (a program — see
-   `hardcaml/test/test_ward.ml`'s `test_uart_tx`/`test_core_integration` for
+   `hardcaml/test/test_gp_pae.ml`'s `test_uart_tx`/`test_core_integration` for
    worked examples, or `programs/` once populated).
 2. Write that lane's `pinbase` register to point its 8-pin local window at
    the desired GPIOs (global index 0-4 = `ui_in[7:3]`, 5-11 = `uo_out[7:1]`,

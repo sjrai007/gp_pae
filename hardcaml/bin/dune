@@ -1,3 +1,3 @@
 (executables
  (names generate_rtl export_traces)
- (libraries ward hardcaml))
+ (libraries gp_pae hardcaml))

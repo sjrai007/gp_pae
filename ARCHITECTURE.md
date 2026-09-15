@@ -1,11 +1,11 @@
-# Architecture — WARD: a reprogrammable protocol-emulator ASIC
+# Architecture — GP_PAE: a reprogrammable protocol-emulator ASIC
 
 Submission for the [Jane Street Protocol Emulator ASIC Competition](https://blog.janestreet.com/protocol-emulator-asic-competition/)
 (Tiny Tapeout, IHP 130nm CMOS5L, 6×4 tile budget, deadline 2027-01-18).
 
 The brief mandates the approach: *"a tiny CPU with an instruction set designed
 for reading pins, writing pins, counting cycles"* rather than fixed protocol
-blocks. WARD is that CPU — but it's actually **N independent tiny CPUs**
+blocks. GP_PAE is that CPU — but it's actually **N independent tiny CPUs**
 ("lanes"), each a minimal programmable sequencer, sharing a pin crossbar and a
 post-fab-writable instruction store. The design is generated in
 [Hardcaml](https://hardcaml.org) (OCaml) so the lane count, memory depth, and
@@ -21,7 +21,7 @@ instruction stream can't hold precise, independent timing for all three at
 once — protocol edges don't line up, and jitter from instruction dispatch on
 one protocol leaks into another. Real-world precedent for the "many tiny
 independent pin-sequencers, one core clock" approach is the RP2040's PIO
-block; WARD applies the same idea at ASIC scale, with its own ISA, sized to
+block; GP_PAE applies the same idea at ASIC scale, with its own ISA, sized to
 fit a Tiny Tapeout tile budget.
 
 Each lane:
@@ -178,7 +178,7 @@ windows: `ui_in[7:3]` (5), `uo_out[7:1]` (7), `uio[7:0]` (8) — up from 14.)
 
 Target: 6×4 tiles ≈ 0.7 mm², ~1K cells/tile ⇒ **~24K logic cells** ballpark.
 
-**Measured** (generic Yosys `synth` on the generated `ward_core.v`, i.e.
+**Measured** (generic Yosys `synth` on the generated `gp_pae_core.v`, i.e.
 mapped to abstract AND/OR/MUX/DFF primitives — not yet mapped to IHP's
 `sg13g2` standard-cell library or placed/routed, but a solid proxy):
 
@@ -285,7 +285,7 @@ differently:
   6×4 Tiny Tapeout tile budget — a single PRU core alone is a different
   scale of design than our entire area budget.
 
-WARD deliberately sits at the PIO end of that spectrum (many minimal lanes,
+GP_PAE deliberately sits at the PIO end of that spectrum (many minimal lanes,
 not one general core) because the area budget makes that the only viable
 choice at this die size — but it departs from PIO in the two ways detailed
 above: **SPI-slave host interface instead of MCU-integrated** (§5, so the

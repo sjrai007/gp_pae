@@ -51,7 +51,7 @@ source than the LinkedIn comments would likely have been anyway.
    cross-checking two independent simulators on the *same* generated RTL).
 4. 2AMLogic's spec explicitly calls out "deterministic cycle-level timing,
    no data-dependent instruction latency" as a requirement. Worth stating
-   explicitly in our own docs that this holds for WARD too (true by
+   explicitly in our own docs that this holds for GP_PAE too (true by
    construction: every instruction is 1 cycle + a fixed programmed delay,
    except WAIT/blocking-PUSH/PULL which block on genuinely external
    conditions — not on operand *values* — which is the correct and

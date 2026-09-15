@@ -1,4 +1,4 @@
-module ward_core (
+module gp_pae_core (
     uio_in,
     clear,
     clock,

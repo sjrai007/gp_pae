@@ -1,13 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # Drives the actual generated Verilog (src/generated/core.v, via the
-# tt_um_ward_protocol_emulator wrapper in src/project.v) through Icarus
+# tt_um_gp_pae wrapper in src/project.v) through Icarus
 # Verilog + cocotb -- deliberately a second, independent simulator/language
-# from the Hardcaml Cyclesim tests in hardcaml/test/test_ward.ml, so a bug
+# from the Hardcaml Cyclesim tests in hardcaml/test/test_gp_pae.ml, so a bug
 # has to survive two independently-implemented simulation engines on the
 # same generated RTL to slip through (see ARCHITECTURE.md \167 7).
 #
-# This mirrors hardcaml/test/test_ward.ml's `test_core_integration`: program
+# This mirrors hardcaml/test/test_gp_pae.ml's `test_core_integration`: program
 # lane 0 over the real 4-wire SPI config port with a small toggle program,
 # point it at global pin index 12 (uio[0]) via pinbase, start it, and check
 # the toggle actually appears on uio_out[0]/uio_oe[0].

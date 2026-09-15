@@ -51,7 +51,7 @@ handoff doc for picking this project back up.
       `.github/workflows/` (TT hardening CI, copied from template, + a
       Hardcaml test workflow).
 - [x] Toolchain installed locally: opam + dune + hardcaml + hardcaml_waveterm
-      + core (switch `hardcaml-ward`), Python 3.12 venv with cocotb 2.0.1 /
+      + core (switch `hardcaml-ward` -- a local opam switch name predating the GP_PAE rename; purely a toolchain detail), Python 3.12 venv with cocotb 2.0.1 /
       pytest (matching TT's pinned versions), yosys and iverilog were
       already present via Homebrew.
 - [x] `hardcaml/lib/isa.ml`: instruction encode/decode + a cycle-accurate
@@ -88,7 +88,7 @@ handoff doc for picking this project back up.
       correct physical `uio` pin, plus a register readback. This is what
       caught the `config_port` read-latch bug above.
 - [x] `hardcaml/bin/generate_rtl.ml` → `src/generated/core.v` (28K lines),
-      wired into `src/project.v` (thin `tt_um_ward_protocol_emulator`
+      wired into `src/project.v` (thin `tt_um_gp_pae`
       wrapper, rst_n→clear inversion, `ena` tied off). `info.yaml`
       `source_files`/`top_module` updated to match.
 - [x] **Independent-simulator check**: `test/test.py` (real cocotb, not a
@@ -105,7 +105,7 @@ handoff doc for picking this project back up.
       and an honest note on where the combinational count is higher than
       necessary (bit-at-a-time crossbar muxing — a known, deliberate
       correctness-over-gate-count trade for now).
-- [x] `dune build` + `dune test` (or `dune exec test/test_ward.exe`): **742
+- [x] `dune build` + `dune test` (or `dune exec test/test_gp_pae.exe`): **742
       checks, 0 failures**, covering ISA roundtrip, the interpreter, a real
       UART TX byte transmitted end-to-end and independently decoded off the
       waveform (not just RTL-vs-interpreter agreement — this caught a
@@ -119,7 +119,7 @@ handoff doc for picking this project back up.
       {uart,spi,i2c}.ml`) as reusable modules, and property-based
       (randomized stimulus) Cyclesim tests — what exists today is a solid
       directed UART TX test plus generic infrastructure
-      (`run_and_compare`/`spi_transaction` in `test_ward.ml`) that a
+      (`run_and_compare`/`spi_transaction` in `test_gp_pae.ml`) that a
       randomized-stimulus pass can build on directly; the randomization
       itself isn't written yet.
 - [~] UART RX, SPI (master), I2C (master, incl. clock stretching) lane

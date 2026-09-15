@@ -1,5 +1,5 @@
 (library
- (name ward)
+ (name gp_pae)
  (preprocess
   (pps ppx_hardcaml))
  (libraries hardcaml))

@@ -1,4 +1,4 @@
-(* WARD lane: one programmable pin-sequencer, implementing the ISA in
+(* GP_PAE lane: one programmable pin-sequencer, implementing the ISA in
    [Isa]. This is a straight, cycle-accurate transcription of
    [Isa.Interp] into Hardcaml -- the two are checked against each other in
    [Test_ward] (same assembled programs, same stimulus, same-cycle
