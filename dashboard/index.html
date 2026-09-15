@@ -374,8 +374,8 @@
     <dl class="specstrip">
       <div class="spec"><dt>Part</dt><dd>tt_um_gp_pae</dd></div>
       <div class="spec"><dt>Process</dt><dd>IHP SG13G2 &middot; 130 nm</dd></div>
-      <div class="spec"><dt>Area budget</dt><dd>6&times;4 tiles &middot; ~0.7 mm&sup2;</dd></div>
-      <div class="spec"><dt>Clock target</dt><dd>50 MHz &middot; inherited default</dd></div>
+      <div class="spec"><dt>Die</dt><dd>6&times;4 tiles &middot; 0.92 mm&sup2; &middot; 35% full</dd></div>
+      <div class="spec"><dt>Clock</dt><dd>50 MHz &middot; timing closed</dd></div>
       <div class="spec"><dt>Submission</dt><dd>2027-01-18</dd></div>
       <div class="spec"><dt>Shuttle</dt><dd>Mar 2027 CMOS5L</dd></div>
     </dl>
@@ -407,9 +407,9 @@
         <div class="cap">Across two independent simulators</div>
       </div>
       <div class="stat">
-        <div class="k">Area used</div>
-        <div class="v">12,442 <small>cells</small></div>
-        <div class="cap">~52% of the ~24,000-cell budget &middot; generic synthesis</div>
+        <div class="k">Die utilization</div>
+        <div class="v">34.8<small>%</small></div>
+        <div class="cap">Measured after place &amp; route &middot; DRC, LVS and timing all clean</div>
       </div>
       <div class="stat">
         <div class="k">Protocols proven in silicon-sim</div>
@@ -897,180 +897,234 @@
 
   <!-- ============================ 05 PPA ============================ -->
   <section id="tab-ppa" role="tabpanel" aria-labelledby="tb-ppa" hidden>
+    <h2 class="sec">Measured on silicon rules &mdash; not estimated</h2>
+    <p class="lede">
+      The full Tiny Tapeout flow has now run: synthesis mapped to IHP's real
+      <code>sg13g2</code> standard cells, then OpenROAD floorplan, placement, clock tree, routing,
+      and signoff checks. Everything below is <b>measured from that run</b>. It replaces the
+      estimates this page previously carried, and it corrects two of them substantially.
+    </p>
 
-    <h2 class="sec">What the budget and the clock actually are</h2>
-    <div class="grid g2" style="margin-bottom:8px">
-      <div class="panel">
-        <h3 style="font-family:var(--display);font-size:15px;font-weight:600;margin:0 0 8px">6&times;4 tiles</h3>
-        <p style="margin:0 0 8px;font-size:13.5px;color:var(--ink-2)">
-          Tiny Tapeout puts many independent projects on one shared die and multiplexes them onto a
-          common set of I/O pins. A <em>tile</em> is the unit of floor space each project rents.
-          6&times;4 means a rectangle 6 tiles wide and 4 tall &mdash; <b>24 tiles</b>. The rules put a
-          tile at roughly 200&times;150&nbsp;&micro;m, so the allocation is about
-          <b>0.7&nbsp;mm&sup2;</b>, and suggest budgeting <b>~1,000 logic cells per tile</b>.
-        </p>
-        <p style="margin:0;font-size:13.5px;color:var(--ink-2)">
-          That ~24,000-cell figure is where the budget number on this page comes from. It is
-          guidance for planning, not a hard gate &mdash; the real constraint is whether the design
-          places and routes inside the rectangle, which only the full flow answers.
-        </p>
+    <div class="grid g3" style="margin-bottom:8px">
+      <div class="stat good">
+        <div class="k">Timing @ 50 MHz</div>
+        <div class="v">CLEAN</div>
+        <div class="cap">Zero setup and hold violations, all three PVT corners</div>
       </div>
-      <div class="panel">
-        <h3 style="font-family:var(--display);font-size:15px;font-weight:600;margin:0 0 8px">50 MHz</h3>
-        <p style="margin:0 0 8px;font-size:13.5px;color:var(--ink-2)">
-          Worth being straight about: this is <b>not a derived or verified number</b>. It is the
-          Tiny Tapeout template's out-of-the-box default &mdash; <code>CLOCK_PERIOD: 20</code>
-          nanoseconds in the hardening config &mdash; carried through unchanged. No static timing
-          analysis has run, so whether the design actually closes at 50 MHz is unknown.
-        </p>
-        <p style="margin:0;font-size:13.5px;color:var(--ink-2)">
-          Two real constraints sit around it. Tiny Tapeout's I/O is rated to about 33 MHz on
-          outputs, so pins cannot be toggled at full core speed regardless. And 10BASE-T at 10 Mbit
-          leaves only <b>5 core cycles per bit</b> &mdash; tight for a CPU that needs at least one
-          cycle per instruction, and the strongest argument for raising the clock if timing allows.
-        </p>
+      <div class="stat good">
+        <div class="k">DRC &middot; LVS &middot; antenna</div>
+        <div class="v">0 <small>errors</small></div>
+        <div class="cap">Layout matches netlist &mdash; &ldquo;circuits match uniquely&rdquo;</div>
+      </div>
+      <div class="stat">
+        <div class="k">Total power</div>
+        <div class="v">8.87 <small>mW</small></div>
+        <div class="cap">7.42 internal &middot; 1.40 switching &middot; 0.04 leakage</div>
       </div>
     </div>
 
-    <h2 class="sec">Area against budget</h2>
+    <p class="note" style="margin-bottom:26px">
+      The 50 MHz figure was previously flagged on this page as an inherited template default that
+      had never been verified. It now has an answer: <b>the design closes timing at 50 MHz with
+      zero violations</b>, at the fast, typical and slow corners alike. Worth noting the flow
+      spent real effort getting there &mdash; see the hold-buffer finding below.
+    </p>
+
+    <h2 class="sec">Area, as actually placed</h2>
     <div class="grid g2">
       <div class="chartcard">
-        <h3>What the 12,442 cells are</h3>
-        <p class="sub">Generic synthesis, pre-PDK-mapping. Every value is direct-labeled below.</p>
-        <svg viewBox="0 0 520 132" width="520" style="max-width:100%;height:auto;display:block" role="img" aria-label="Stacked bar: instruction memory flip-flops 2,048 cells; lane logic and config flip-flops 414; combinational cells 9,980; total 12,442 of a 24,000 cell budget.">
-          <!-- budget track -->
-          <text x="0" y="12" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink-3)" letter-spacing="0.08em">USED 12,442 OF ~24,000 CELL BUDGET</text>
-          <rect x="0" y="22" width="520" height="30" rx="2" fill="var(--surface-2)" stroke="var(--rule)"></rect>
-          <!-- 12442/24000 = 51.8% of 520 = 269.5 -->
-          <rect x="0" y="22" width="44.4" height="30" fill="var(--s2)"></rect>
-          <rect x="46.4" y="22" width="9.0" height="30" fill="var(--s1)"></rect>
-          <rect x="57.4" y="22" width="216.3" height="30" fill="var(--s3)"></rect>
-          <line x1="273.7" y1="16" x2="273.7" y2="58" stroke="var(--ink)" stroke-width="1.5"></line>
-          <text x="280" y="42" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--ink)">headroom &#183; 11,558 cells</text>
-
-          <!-- direct labels -->
+        <h3>What occupies the 6&times;4 tiles</h3>
+        <p class="sub">Die is 1289.28 &times; 710.64 &micro;m = 0.92 mm&sup2;. Standard cells occupy 313,708 &micro;m&sup2; of it.</p>
+        <svg viewBox="0 0 520 150" width="520" style="max-width:100%;height:auto;display:block" role="img" aria-label="Standard cell area 313,708 square microns: sequential cells 120,610; combinational 120,385; timing repair buffers 63,234; clock and other cells 9,478.">
+          <text x="0" y="12" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink-3)" letter-spacing="0.08em">STANDARD CELL AREA &#183; 313,708 &#181;M&#178;</text>
+          <rect x="0" y="22" width="194.5" height="30" fill="var(--s1)"></rect>
+          <rect x="196.5" y="22" width="194.2" height="30" fill="var(--s2)"></rect>
+          <rect x="392.7" y="22" width="102.0" height="30" fill="var(--s3)"></rect>
+          <rect x="496.7" y="22" width="15.3" height="30" fill="var(--ink-3)"></rect>
           <g font-family="IBM Plex Mono, monospace" font-size="10.5">
-            <rect x="0" y="72" width="10" height="10" rx="2" fill="var(--s2)"></rect>
-            <text x="16" y="81" fill="var(--ink)">2,048</text>
-            <text x="58" y="81" fill="var(--ink-2)">instruction memory flip-flops</text>
+            <rect x="0" y="70" width="10" height="10" rx="2" fill="var(--s1)"></rect>
+            <text x="16" y="79" fill="var(--ink)">120,610</text>
+            <text x="74" y="79" fill="var(--ink-2)">sequential cells (2,462 flip-flops) &#183; 38.4%</text>
 
-            <rect x="0" y="92" width="10" height="10" rx="2" fill="var(--s1)"></rect>
-            <text x="16" y="101" fill="var(--ink)">414</text>
-            <text x="58" y="101" fill="var(--ink-2)">lane logic + config flip-flops</text>
+            <rect x="0" y="90" width="10" height="10" rx="2" fill="var(--s2)"></rect>
+            <text x="16" y="99" fill="var(--ink)">120,385</text>
+            <text x="74" y="99" fill="var(--ink-2)">combinational logic (13,112 cells) &#183; 38.4%</text>
 
-            <rect x="0" y="112" width="10" height="10" rx="2" fill="var(--s3)"></rect>
-            <text x="16" y="121" fill="var(--ink)">9,980</text>
-            <text x="58" y="121" fill="var(--ink-2)">combinational cells</text>
+            <rect x="0" y="110" width="10" height="10" rx="2" fill="var(--s3)"></rect>
+            <text x="16" y="119" fill="var(--ink)">63,234</text>
+            <text x="74" y="119" fill="var(--ink-2)">timing-repair buffers (5,459 cells) &#183; 20.2%</text>
+
+            <rect x="0" y="130" width="10" height="10" rx="2" fill="var(--ink-3)"></rect>
+            <text x="16" y="139" fill="var(--ink)">9,478</text>
+            <text x="74" y="139" fill="var(--ink-2)">clock tree, inverters, antenna diodes &#183; 3.0%</text>
           </g>
         </svg>
       </div>
 
       <div class="chartcard">
-        <h3>Instruction memory dominates the registers</h3>
-        <p class="sub">Exact arithmetic from the design parameters: 4 lanes &times; 32 words &times; 16 bits.</p>
-        <div style="display:flex;align-items:baseline;gap:10px;margin:22px 0 6px">
-          <div style="font-family:var(--display);font-weight:700;font-size:54px;line-height:1;letter-spacing:-0.03em;color:var(--s2);font-variant-numeric:tabular-nums">83.2%</div>
-          <div style="font-size:13px;color:var(--ink-2);max-width:22ch">of all flip-flops in the design are instruction memory</div>
+        <h3>A third full</h3>
+        <p class="sub">Placement utilization across the core area.</p>
+        <div style="display:flex;align-items:baseline;gap:10px;margin:22px 0 10px">
+          <div style="font-family:var(--display);font-weight:700;font-size:54px;line-height:1;letter-spacing:-0.03em;color:var(--s1);font-variant-numeric:tabular-nums">34.8%</div>
+          <div style="font-size:13px;color:var(--ink-2);max-width:24ch">of the allotted core area is occupied by real cells</div>
         </div>
-        <svg viewBox="0 0 480 26" width="480" style="max-width:100%;height:auto;display:block;margin-top:14px" role="img" aria-label="2,048 of 2,462 flip-flops are instruction memory.">
+        <svg viewBox="0 0 480 26" width="480" style="max-width:100%;height:auto;display:block" role="img" aria-label="34.8 percent utilization.">
           <rect x="0" y="0" width="480" height="18" rx="2" fill="var(--surface-2)" stroke="var(--rule)"></rect>
-          <rect x="0" y="0" width="399.4" height="18" rx="2" fill="var(--s2)"></rect>
-          <text x="8" y="13" font-family="IBM Plex Mono, monospace" font-size="10.5" font-weight="500" fill="#fff">2,048 imem</text>
-          <text x="409" y="13" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-2)">414 other</text>
+          <rect x="0" y="0" width="166.9" height="18" rx="2" fill="var(--s1)"></rect>
+          <text x="176" y="13" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-2)">the remaining 65% is filler</text>
         </svg>
         <p style="font-size:12.5px;color:var(--ink-2);margin:14px 0 0">
-          Flip-flops cost roughly 5&ndash;6&times; the area of a basic gate, so the cell <em>count</em>
-          above understates how much silicon the registers actually occupy. Instruction memory is
-          plausibly 40&ndash;50% of the whole chip &mdash; which makes it the one thing worth optimizing.
+          56,182 filler cells occupy 588,709 &micro;m&sup2; of empty space. That is headroom, not waste:
+          it is the room a fifth lane and the stretch protocols would move into. It also means the
+          design is nowhere near the routing limits of its allocation.
         </p>
       </div>
     </div>
 
-    <h2 class="sec">Three levers on instruction memory</h2>
+    <h2 class="sec">Where the estimates were wrong</h2>
     <p class="lede">
-      The leading public entry documented flip-flop instruction memory as a known limitation and
-      left it there. It is the dominant area term for everyone who built this architecture &mdash;
-      which, judging by the public entries, is everyone.
+      Two of the figures this page previously showed were meaningfully off. Both are corrected
+      here, and the direction matters: one made instruction memory look like a bigger share of the
+      chip than it is.
     </p>
-    <p class="note" style="margin-bottom:18px">
-      <b>To be precise about why this matters.</b> Area is not itself a judging criterion &mdash; the
-      stated criteria are unique functionality and novel design/verification methodology, and the
-      only hard area requirement is fitting inside 6&times;4 tiles, which the design already does
-      with room to spare. Instruction memory matters because it is the <em>currency</em>: every
-      flip-flop freed there buys a lane or a protocol that a competitor spending the same silicon
-      on oversized program memory cannot fit. The goal is functionality per tile, not the smallest
-      possible chip.
+    <div class="chartcard">
+      <div class="tablewrap">
+        <table class="dt">
+          <thead><tr><th>Quantity</th><th>Previously estimated</th><th>Measured</th><th>Verdict</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Area per flip-flop</td>
+              <td class="num" style="text-align:left">~22 &micro;m&sup2;</td>
+              <td class="num" style="text-align:left"><b>49.0 &micro;m&sup2;</b></td>
+              <td style="color:var(--risk)">2.2&times; too low</td>
+            </tr>
+            <tr>
+              <td>Instruction memory share of cell area</td>
+              <td class="num" style="text-align:left">40&ndash;50%</td>
+              <td class="num" style="text-align:left"><b>32.0%</b></td>
+              <td style="color:var(--risk)">Overstated</td>
+            </tr>
+            <tr>
+              <td>Flip-flop count</td>
+              <td class="num" style="text-align:left">2,462</td>
+              <td class="num" style="text-align:left"><b>2,462</b></td>
+              <td style="color:var(--ok)">Exact</td>
+            </tr>
+            <tr>
+              <td>Die area for 6&times;4 tiles</td>
+              <td class="num" style="text-align:left">~0.7 mm&sup2;</td>
+              <td class="num" style="text-align:left"><b>0.92 mm&sup2;</b></td>
+              <td style="color:var(--ok)">More room than assumed</td>
+            </tr>
+            <tr>
+              <td>50 MHz closes timing</td>
+              <td class="num" style="text-align:left">unverified</td>
+              <td class="num" style="text-align:left"><b>yes, 0 violations</b></td>
+              <td style="color:var(--ok)">Confirmed</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:13px;color:var(--ink-2);margin:14px 0 0;max-width:76ch">
+        Instruction memory is still the largest single block on the die &mdash; 2,048 of the 2,462
+        flip-flops, about 100,000 &micro;m&sup2;, roughly a third of all cell area. The strategic
+        conclusion is unchanged, but it was worth measuring rather than asserting: a third is not
+        a half.
+      </p>
+    </div>
+
+    <h2 class="sec">The finding nobody predicted: a fifth of the chip is hold buffers</h2>
+    <div class="chartcard">
+      <p class="sub" style="margin-bottom:16px">
+        5,459 timing-repair buffers, of which 2,603 exist purely to fix hold violations, occupying
+        63,234 &micro;m&sup2; &mdash; <b>20.2% of all standard cell area</b>, more than half what the
+        instruction memory costs.
+      </p>
+      <p style="font-size:13.5px;color:var(--ink-2);margin:0 0 10px;max-width:76ch">
+        This was not on any of the optimization lists, because nothing about the RTL suggests it.
+        It is the flow inserting delay to stop fast paths from racing the clock. That it takes a
+        fifth of the silicon points at something structural &mdash; plausibly the same
+        bit-at-a-time pin crossbar already flagged as inefficient, which produces many short,
+        fast paths for the tool to repair one by one.
+      </p>
+      <p style="font-size:13.5px;color:var(--ink-2);margin:0;max-width:76ch">
+        Worth investigating before spending effort shrinking instruction memory: this is a
+        comparable amount of area, it was invisible until the design was actually placed, and
+        unlike memory depth it may be recoverable without giving anything up.
+      </p>
+    </div>
+
+    <h2 class="sec">Instruction memory levers, repriced</h2>
+    <p class="lede">
+      The projections below now use the measured 49.0 &micro;m&sup2; per flip-flop rather than the
+      earlier estimate, so the savings are roughly double what this page previously showed.
     </p>
 
     <div class="chartcard">
-      <h3>Projected instruction-memory flip-flops</h3>
+      <h3>Instruction memory area</h3>
       <p class="sub">Right-sizing depth (A) plus a delay-scale field that keeps programs short enough to allow it (B).</p>
-      <svg viewBox="0 0 560 190" width="560" style="max-width:100%;height:auto;display:block" role="img" aria-label="Instruction memory flip-flops: today 2,048; with levers A and B 1,152, a 44 percent reduction; with five lanes plus A and B 1,440, still 30 percent below today.">
+      <svg viewBox="0 0 560 190" width="560" style="max-width:100%;height:auto;display:block" role="img" aria-label="Instruction memory area: today 2,048 flip-flops or 100,400 square microns; with levers A and B 1,152 flip-flops or 56,400; with five lanes plus A and B 1,440 flip-flops or 70,600.">
         <g font-family="IBM Plex Mono, monospace" font-size="10.5">
-          <!-- baseline -->
           <text x="0" y="14" fill="var(--ink-2)">today &#183; 4 lanes &#215; 32 words &#215; 16 bit</text>
-          <rect x="0" y="22" width="420" height="26" rx="2" fill="var(--s2)"></rect>
-          <text x="430" y="40" font-weight="500" fill="var(--ink)">2,048</text>
+          <rect x="0" y="22" width="380" height="26" rx="2" fill="var(--s2)"></rect>
+          <text x="390" y="40" font-weight="500" fill="var(--ink)">100,400 &#181;m&#178;</text>
 
           <text x="0" y="76" fill="var(--ink-2)">levers A + B &#183; 4 lanes &#215; 16 words &#215; 18 bit</text>
-          <rect x="0" y="84" width="236.3" height="26" rx="2" fill="var(--s1)"></rect>
-          <text x="246" y="102" font-weight="500" fill="var(--ink)">1,152</text>
-          <text x="300" y="102" fill="var(--s3)">&#8722;44%</text>
+          <rect x="0" y="84" width="213.8" height="26" rx="2" fill="var(--s1)"></rect>
+          <text x="224" y="102" font-weight="500" fill="var(--ink)">56,400 &#181;m&#178;</text>
+          <text x="316" y="102" fill="var(--s3)">&#8722;44,000</text>
 
           <text x="0" y="138" fill="var(--ink-2)">levers A + B &#183; <tspan font-weight="600" fill="var(--ink)">5 lanes</tspan> &#215; 16 words &#215; 18 bit</text>
-          <rect x="0" y="146" width="295.3" height="26" rx="2" fill="var(--s1)"></rect>
-          <text x="305" y="164" font-weight="500" fill="var(--ink)">1,440</text>
-          <text x="359" y="164" fill="var(--s3)">&#8722;30%</text>
+          <rect x="0" y="146" width="267.2" height="26" rx="2" fill="var(--s1)"></rect>
+          <text x="277" y="164" font-weight="500" fill="var(--ink)">70,600 &#181;m&#178;</text>
+          <text x="369" y="164" fill="var(--s3)">&#8722;29,800</text>
         </g>
       </svg>
       <p style="font-size:13px;color:var(--ink-2);margin:14px 0 0;max-width:74ch">
-        The last row is the headline: <strong>a fifth lane &mdash; which is what running UART, SPI and
-        I2C all at once actually requires &mdash; while still using 30% less memory area than today.</strong>
-        More functionality in less silicon.
+        Same conclusion as before, now in real units: a <b>fifth lane</b> &mdash; which is what
+        running UART, SPI and I2C simultaneously actually requires &mdash; while still using about
+        30,000 &micro;m&sup2; less memory area than today.
       </p>
     </div>
 
     <h2 class="sec">Memory selection</h2>
     <p class="lede">
-      The rules themselves recommend SRAM over flip-flops for instruction memory. Researched, and
-      deliberately deferred rather than dismissed &mdash; the numbers are here so the decision stays
-      visible and can be revisited on measurement rather than memory.
+      With a real per-flip-flop cost, the SRAM comparison sharpens considerably.
     </p>
 
     <div class="grid g2">
       <div class="chartcard">
-        <h3>Storage density</h3>
+        <h3>Storage density, measured against published</h3>
         <p class="sub">Silicon area per bit stored. Lower is better.</p>
-        <svg viewBox="0 0 520 168" width="520" style="max-width:100%;height:auto;display:block" role="img" aria-label="Area per bit: flip-flops about 22 square microns, estimated; 256 by 8 SRAM macro 8.6; 1024 by 8 SRAM macro 6.0.">
+        <svg viewBox="0 0 520 168" width="520" style="max-width:100%;height:auto;display:block" role="img" aria-label="Area per bit: flip-flops 49 square microns measured; 256 by 8 SRAM macro 8.6; 1024 by 8 SRAM macro 6.0.">
           <g font-family="IBM Plex Mono, monospace" font-size="10.5">
-            <text x="0" y="14" fill="var(--ink-2)">flip-flops (today)</text>
+            <text x="0" y="14" fill="var(--ink-2)">flip-flops (today, measured)</text>
             <rect x="0" y="22" width="420" height="24" rx="2" fill="var(--s2)"></rect>
-            <text x="430" y="39" font-weight="500" fill="var(--ink)">~22</text>
-            <text x="466" y="39" fill="var(--ink-3)">est.</text>
+            <text x="430" y="39" font-weight="500" fill="var(--ink)">49.0</text>
 
             <text x="0" y="70" fill="var(--ink-2)">SRAM macro 256 &#215; 8</text>
-            <rect x="0" y="78" width="164.2" height="24" rx="2" fill="var(--s1)"></rect>
-            <text x="174" y="95" font-weight="500" fill="var(--ink)">8.6</text>
+            <rect x="0" y="78" width="73.7" height="24" rx="2" fill="var(--s1)"></rect>
+            <text x="84" y="95" font-weight="500" fill="var(--ink)">8.6</text>
 
             <text x="0" y="126" fill="var(--ink-2)">SRAM macro 1024 &#215; 8</text>
-            <rect x="0" y="134" width="114.5" height="24" rx="2" fill="var(--s1)"></rect>
-            <text x="124" y="151" font-weight="500" fill="var(--ink)">6.0</text>
+            <rect x="0" y="134" width="51.4" height="24" rx="2" fill="var(--s1)"></rect>
+            <text x="62" y="151" font-weight="500" fill="var(--ink)">6.0</text>
           </g>
         </svg>
-        <div class="legend">
-          <span class="lg"><i style="background:var(--s2)"></i>flip-flops &mdash; &micro;m&sup2; per bit</span>
-          <span class="lg"><i style="background:var(--s1)"></i>SRAM macro &mdash; &micro;m&sup2; per bit</span>
-        </div>
+        <p style="font-size:12.5px;color:var(--ink-2);margin:14px 0 0">
+          Not 2.6&ndash;3.7&times; denser as previously estimated, but <b>5.7&ndash;8.2&times;</b>.
+          The case for SRAM is much stronger than this page previously suggested.
+        </p>
       </div>
 
       <div class="chartcard">
-        <h3>Why not simply switch</h3>
-        <p class="sub">The density win is real; so are three costs.</p>
+        <h3>Still not a drop-in swap</h3>
+        <p class="sub">The density gap grew; the obstacles did not move.</p>
         <div class="tablewrap">
           <table class="dt">
             <thead><tr><th>Factor</th><th>Flip-flops</th><th>SRAM macro</th></tr></thead>
             <tbody>
-              <tr><td>Density per bit</td><td>~22 &micro;m&sup2; (est.)</td><td class="num" style="text-align:left;color:var(--ok)">2.6&ndash;3.7&times; better</td></tr>
+              <tr><td>Density per bit</td><td>49.0 &micro;m&sup2; (measured)</td><td style="color:var(--ok)">5.7&ndash;8.2&times; better</td></tr>
               <tr><td>Read behaviour</td><td>Combinational, same cycle</td><td>Registered, 1 cycle later</td></tr>
               <tr><td>Fetch for 4&ndash;5 lanes</td><td>Private per lane, no arbitration</td><td>One port, needs arbitration</td></tr>
               <tr><td>Timing determinism</td><td>Guaranteed by construction</td><td>Must be proven under contention</td></tr>
@@ -1079,23 +1133,23 @@
           </table>
         </div>
         <p style="font-size:13px;color:var(--ink-2);margin:14px 0 0">
-          The usual objection &mdash; one port cannot feed five lanes &mdash; is actually wrong here, because
-          bit-banging is overwhelmingly idle: at real baud rates a lane fetches on under 5% of
-          cycles. The genuine difficulty is that protocol timing must stay cycle-exact, so
-          contention can never cause a variable stall. That is real work, which is why it comes
-          after the cheaper levers, not before.
+          The counter-argument is unchanged and still sound: a single port can serve several lanes
+          because bit-banging is idle over 95% of the time at real baud rates. What has to be
+          proven is that fetch contention never introduces a <em>variable</em> stall, because
+          protocol timing depends on being cycle-exact. Given a 5.7&times; density gap and 65% of
+          the die sitting empty, though, the trade now deserves a serious look rather than a
+          deferral.
         </p>
       </div>
     </div>
 
     <p class="note">
-      <b>Honest status of these numbers.</b> The 83.2% figure is exact arithmetic from the design
-      parameters. Cell counts are real, from generic Yosys synthesis. Everything in &micro;m&sup2;, and
-      the flip-flop-to-gate area ratio, is an <em>estimate</em> &mdash; the IHP PDK is not installed
-      locally, so mapped area, timing and power only become measured in Phase C. Power has not been
-      analysed at all yet; the largest expected win is clock-gating the instruction memory, which is
-      written once at programming time and then never again, yet currently clocks 50 million times a
-      second.
+      <b>Provenance.</b> Every number on this tab comes from the Tiny Tapeout GDS workflow run on
+      commit <code>7bb8032</code> &mdash; LibreLane with Yosys and OpenROAD against the IHP
+      <code>sg13g2</code> PDK, signed off with Magic DRC, Netgen LVS and multi-corner static timing
+      analysis. The run takes about 90 minutes and produces a complete, manufacturable GDS. The
+      earlier estimates on this page are preserved in the comparison table above rather than
+      quietly replaced.
     </p>
   </section>
 
