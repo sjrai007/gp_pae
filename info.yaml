@@ -8,11 +8,11 @@ project:
   clock_hz:     50000000 # 50 MHz baseline (TT template default); revisit after STA
 
   # How many tiles your design occupies? A single tile is about 167x108 uM.
-  # NOTE: competition post states a 6x4 tile budget (~0.7mm^2) for this
-  # chipathon specifically, which is larger than this template's standard
-  # menu (1x1..8x2). Using 8x2 as a placeholder pending confirmation from
-  # organizers on how the extended 6x4 allocation is declared — see NOTES.md.
-  tiles: "8x2"          # TODO: confirm correct value for 6x4 chipathon allocation
+  # The competition rules state this chipathon's allocation explicitly:
+  # "Set the tile size in info.yaml to 6x4." (max 6x4 tiles, ~0.7mm^2; the
+  # organizers are evaluating a possible bump to 8x4 and will announce it.)
+  # This supersedes the template's standard 1x1..8x2 menu.
+  tiles: "6x4"
 
   # Your top module name must start with "tt_um_". Make it unique by including your github username:
   top_module:  "tt_um_ward_protocol_emulator"

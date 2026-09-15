@@ -6,19 +6,31 @@ handoff doc for picking this project back up.
 
 ## Open questions for organizers (asic-competition@janestreet.com)
 
-1. **Tile shape for the 6×4 budget.** The `ttihp-verilog-template` (cmos5l
-   branch) `info.yaml` only documents standard shapes `1x1, 1x2, 2x2, 3x2,
-   4x2, 6x2, 8x2` (all height-2). The competition post says the budget is
-   "6x4 tiles" (with 8x4 possibly coming later) — a shape not in that list.
-   Need to confirm how a 6×4 allocation is actually declared in `info.yaml`
-   for this chipathon (custom value? separate template? separate submission
-   process?). `info.yaml` currently has `tiles: "8x2"` as a placeholder —
-   **do not submit with this value uncorrected.**
-2. **SRAM hard macro availability.** `tt_um_urish_sram_test` demonstrates a
-   1KB SRAM macro on IHP CMOS5L via Tiny Tapeout. Unclear if this is freely
-   instantiable by any submission or a one-off example. Would matter for
-   instruction-memory depth (see ARCHITECTURE.md §4) — worth asking, but the
-   baseline design doesn't depend on the answer.
+1. ~~**Tile shape for the 6x4 budget.**~~ **RESOLVED** (2026-09-15, from
+   the competition rules text): the rules say explicitly *"Set the tile
+   size in info.yaml to 6x4."* — the value is literal, and supersedes the
+   template's documented `1x1..8x2` menu. `info.yaml` now has
+   `tiles: "6x4"`. The organizers are evaluating a possible bump to 8x4
+   (~30% more area) and will announce it if it happens; no action needed
+   from us, but worth re-checking before submission.
+2. ~~**SRAM hard macro availability.**~~ **RESEARCHED, deferred to Phase C**
+   — not an open question for the organizers any more. The rules themselves
+   recommend SRAM over flip-flops for instruction memory, and
+   `tt_um_urish_sram_test` (https://github.com/urish/ttihp-sram-test) is a
+   working reference: IHP `sg13g2` single-port synchronous macros, exact
+   17-port blackbox signature captured, 1-cycle *registered* read latency,
+   per-bit write mask; 1024x8 = 49,419 um^2 (needs >=2x1 tiles), 256x8 =
+   17,547 um^2. Density is 2.6-3.7x better per bit than flops.
+   **Not adopted yet** because (a) the cheaper Levers A+B (right-size
+   `imem_depth`, add a delay-scale field) cut instruction memory
+   substantially first, (b) the registered read latency means a real
+   fetch-stage pipelining change plus multi-lane arbitration that must
+   preserve cycle-exact determinism, and (c) Tiny Tapeout's own docs flag
+   the macro integration as "not trivial... fragile... subject to change"
+   (custom LibreLane macro placement/rotation, hand-written PDN config
+   because the macro's power pins are on a different metal layer than the
+   default grid expects, DRC/LVS blackbox exceptions). Revisit in Phase C
+   on measured numbers.
 3. **Team composition** — post says solo is fine, teams "strongly
    recommended." Decide whether we're recruiting collaborators before the
    Jan 18 2027 deadline.
@@ -110,8 +122,14 @@ handoff doc for picking this project back up.
       (`run_and_compare`/`spi_transaction` in `test_ward.ml`) that a
       randomized-stimulus pass can build on directly; the randomization
       itself isn't written yet.
-- [ ] UART RX, SPI (master), I2C (master, incl. clock stretching) lane
-      programs — UART TX is proven end-to-end; these are the next protocols
+- [~] UART RX, SPI (master), I2C (master, incl. clock stretching) lane
+      programs — **fully designed, not yet implemented**: pin assignments,
+      instruction-by-instruction microcode, hand-verified cycle-by-cycle
+      timing proofs, golden-model interfaces and a test plan are all
+      written up in `hardcaml/lib/protocols/DESIGN.md`. Implementation is
+      gated on the delay-scale ISA change (see findings below) so the
+      microcode gets written once at real rates instead of twice.
+      Original wording follows for context — UART TX is proven end-to-end; these are the next protocols
       to actually write and test now that the CPU is solid.
 - [ ] Stretch: USB low-speed, 10BASE-T Manchester lane programs.
 - [ ] Bonus protocols named in the full brief (beyond UART/SPI/I2C +
@@ -132,6 +150,77 @@ handoff doc for picking this project back up.
 - [ ] Push repo to GitHub as public/open-source (competition requirement),
       wire up the real CI (currently copied but unverified against our
       module name).
+
+## Findings from the protocol design pass (2026-09-15)
+
+Reading the RTL line-by-line while designing the UART RX / SPI / I2C
+microcode surfaced four things that need action independent of writing the
+protocol code. Full detail in `hardcaml/lib/protocols/DESIGN.md` §0.
+
+1. **`ARCHITECTURE.md` claimed each lane "has its own clock divider" — it
+   was never implemented.** No `clkdiv` exists anywhere in
+   `isa.ml`/`sequencer.ml`/`core.ml`. With `delay` capped at 5 bits (32
+   cycles) and no divider, the ISA *cannot* express a real 115200-baud UART
+   bit (~434 cycles at 50 MHz) without a 2-instruction counted delay loop
+   per timed step. Doc has been corrected. **Fix chosen: add a delay-scale
+   field** (a 1-2 bit multiplier on `delay`, reusing spare operand bits
+   several opcodes already have), which closes the gap, shortens every
+   real-rate program, and kills the counted-loop cycle-accounting bug class.
+   Lands *before* the protocol microcode is implemented.
+2. **`Set_pins`/`Set_pindirs` overwrite the whole pin window, not per-bit**
+   — there is no side-set mechanism (unlike the RP2040 PIO this is modeled
+   on). A lane therefore cannot cleanly toggle a clock pin via `Set` *and*
+   shift a data bit via `Out_pins` (which always targets local index 0):
+   the `Set` clobbers the just-shifted bit. **This is why SPI and I2C each
+   need 2 lanes**, coordinated by a shared IRQ flag per bit — a consequence
+   of the ISA, not a design preference.
+3. **Only 4 IRQ flags exist chip-wide**, with a confirmed 1-cycle
+   cross-lane latency. Concurrent SPI (2 flags) + I2C (2 flags) exhausts
+   the entire budget — zero headroom for a Phase B protocol (JTAG/SWD)
+   needing its own coordination without time-multiplexing a flag or
+   widening `num_irq` (an RTL change). Decide when JTAG/SWD get scheduled.
+4. **Pin windows are a fixed 8-wide contiguous block** (`pincount` is a
+   compile-time constant, not a runtime register). With 20 usable global
+   pins, running all three protocols concurrently (5 lanes) means windows
+   *must* overlap, and the RTL does not arbitrate — it just ORs whichever
+   lanes claim a pin. Handled by an explicit per-lane-pair safety argument
+   in `DESIGN.md` §7.2. **That argument is a property of the specific
+   instructions chosen, not something the hardware enforces** — anyone
+   editing those programs must re-verify it.
+
+Also: the full 3-protocol concurrent demo needs **5 lanes, not 4**.
+`num_lanes` is already a Hardcaml parameter so this is cheap (~567 flops),
+and combined with the planned instruction-memory right-sizing it costs
+*less* area than today's 4-lane configuration.
+
+## Idea on file: full agent-hierarchy orchestration (proposed by Suresh, not adopted)
+
+Suresh proposed running the whole project as a hierarchical agent
+orchestration, mirroring a real ASIC organisation:
+
+```
+main_orchestrator
+├─ FrontEnd_agent   → RTL_agent, verification_agent, tb_gen_agent,
+│                     schematic_gen_agent, progress_track_agent, html_gen_agent
+├─ Synthesis_agent  → syn_generic_agent, syn_map_agent, lec_verify_agent
+├─ Implement_agent  → floorplan, place, cts, postroute, signoff_sta
+├─ PPA_agent        → rtl_feedback_agent, ppa_opt_agent, feas_agent
+└─ flow_agent       → ties the above together, runs stages in parallel where
+                      possible, and shows a live "what is running and where
+                      has it reached" view
+```
+
+**Not adopted for now** (Suresh agreed after discussing the tradeoffs): the
+existing `spec-to-gds` agent already covers the Synthesis + Implement scope
+as one integrated flow, so splitting it into 8 agents would rebuild what
+exists; most individual PnR stages are mechanical tool invocations where an
+agent adds nothing over running the command; and the live-progress view is
+a native feature of the Workflow tool rather than something to hand-build.
+
+**Kept on record because the structure is sound** — it maps cleanly onto how
+this work actually decomposes, and if the project grows a team where
+per-stage ownership maps to different people, this is likely the right shape
+to revisit.
 
 ## Decisions made (with rationale, so we don't re-litigate)
 

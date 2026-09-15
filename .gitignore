@@ -21,3 +21,6 @@ test/output/
 # misc
 *.log
 .DS_Store
+
+# scraped research scratch (agent-generated, kept locally, not part of the submission)
+.mem_page.txt

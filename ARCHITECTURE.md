@@ -27,18 +27,43 @@ fit a Tiny Tapeout tile budget.
 Each lane:
 - runs its own program counter over a **shared, statically-partitioned
   instruction store** (no multi-port SRAM needed — see §4),
-- owns a configurable, non-overlapping window of the 24 physical GPIOs
-  (`pinbase`, `pincount`, per-pin direction — set at load time, not
-  hardwired), so lane↔pin assignment is itself part of "the program", and
-- has its own clock divider, so one core clock serves I2C standard/fast mode,
-  arbitrary UART bauds, multi-MHz SPI, USB low-speed (1.5 Mbit, bit-locked),
-  and 10BASE-T Manchester (10 Mbit) simultaneously, each lane dividing down
-  independently. No per-protocol PLL, no fixed baud table baked into silicon.
-  Baseline target is the TT template's default 50 MHz (20 ns, `src/config.json`)
-  — enough headroom above 10 Mbit line rate for 4×-oversampled Manchester
-  decode on the stretch goal. We'll push this higher once static timing
-  analysis on the synthesized design shows margin; treat 50 MHz as the
-  committed baseline, anything above as upside.
+- owns a window of the physical GPIOs, positioned at load time via the
+  `pinbase` register (window *width* is a fixed compile-time 8, not a
+  runtime register), with per-pin direction set by the running program —
+  so lane↔pin assignment is itself part of "the program". Note that with
+  20 lane-usable pins, running 5 lanes means windows necessarily overlap;
+  the hardware does not arbitrate overlap, so non-conflict is a property
+  of the loaded programs and is argued explicitly per lane-pair in
+  `hardcaml/lib/protocols/DESIGN.md` §7.2, and
+- sets its own bit timing from the per-instruction `delay` field, so one
+  core clock serves I2C standard/fast mode, arbitrary UART bauds,
+  multi-MHz SPI, USB low-speed (1.5 Mbit, bit-locked), and 10BASE-T
+  Manchester (10 Mbit) simultaneously, each lane timing itself
+  independently. No per-protocol PLL, no fixed baud table baked into
+  silicon.
+
+  > **Correction (2026-09-15).** An earlier revision of this document
+  > claimed each lane "has its own clock divider". It does not — no
+  > `clkdiv` register was ever implemented, in `isa.ml`, `sequencer.ml`,
+  > or `core.ml`. Timing comes solely from the 5-bit per-instruction
+  > `delay` field, which caps a single instruction at 32 cycles: far short
+  > of one real UART bit at 115200 baud (~434 cycles at 50 MHz) or an I2C
+  > standard-mode half-period (250 cycles). Today that gap is bridged by a
+  > *counted delay loop* (`Set Y,k` + a closing `Jmp(Y_dec,...)`, reaching
+  > ~8160 cycles from two instructions, at the cost of tying up a scratch
+  > register). The planned fix is a **delay-scale field** — a 1-2 bit
+  > multiplier on `delay`, fitted into operand bits that several opcodes
+  > already leave spare — which restores the intended capability, shortens
+  > every real-rate program, and removes the counted-loop
+  > cycle-accounting bug class. See `hardcaml/lib/protocols/DESIGN.md`
+  > §0.1 and `NOTES.md`.
+
+  Baseline clock target is the TT template's default 50 MHz (20 ns,
+  `src/config.json`) — enough headroom above 10 Mbit line rate for
+  4x-oversampled Manchester decode on the stretch goal. We'll push this
+  higher once static timing analysis on the synthesized design shows
+  margin; treat 50 MHz as the committed baseline, anything above as
+  upside.
 
 This directly targets the "unique functionality" judging axis: running UART +
 SPI + I2C *concurrently and independently*, post-fab-reprogrammable to swap
@@ -77,7 +102,9 @@ This is what "counting cycles" in the brief means in practice.
 Per-lane state: `PC`, two 8-bit scratch/loop counters `X`/`Y`, an 8-bit input
 shift register `ISR`, an 8-bit output shift register `OSR`, one 1-deep RX
 FIFO and one 1-deep TX FIFO (the handshake to/from the host-facing side of
-the chip), plus the load-time-only `pinbase`/`pincount`/`clkdiv` registers.
+the chip), plus the load-time-only `pinbase` and `jmp_pin` registers and the `run`
+bit. (There is no `pincount` register — window width is a compile-time
+constant of 8 — and no `clkdiv` register; see the correction in §1.)
 
 | Class | Form | Semantics |
 |---|---|---|
